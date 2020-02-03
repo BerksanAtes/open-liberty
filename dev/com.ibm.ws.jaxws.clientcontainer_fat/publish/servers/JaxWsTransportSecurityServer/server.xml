@@ -2,7 +2,7 @@
     <featureManager>
         <feature>appSecurity-2.0</feature>
         <feature>jsp-2.3</feature>
-        <feature>jaxws-2.2</feature>
+        <feature>jaxws-2.3</feature>
         <feature>ejbLite-3.2</feature>
     </featureManager>
 

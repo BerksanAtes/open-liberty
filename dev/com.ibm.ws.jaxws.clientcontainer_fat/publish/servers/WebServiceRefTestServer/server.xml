@@ -2,7 +2,7 @@
     <featureManager>
         <feature>jsp-2.2</feature>
         <feature>jndi-1.0</feature>
-        <feature>jaxws-2.2</feature>
+        <feature>jaxws-2.3</feature>
     </featureManager>
 
     <include location="../fatTestPorts.xml"/>

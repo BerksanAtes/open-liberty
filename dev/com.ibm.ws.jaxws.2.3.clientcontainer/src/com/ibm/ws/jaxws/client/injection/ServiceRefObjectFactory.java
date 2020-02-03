@@ -15,15 +15,19 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 
+import javax.management.DynamicMBean;
 import javax.naming.Context;
 import javax.naming.Name;
 import javax.naming.Reference;
@@ -43,6 +47,7 @@ import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 
+import com.ibm.websphere.kernel.server.ServerInfoMBean;
 import com.ibm.websphere.ras.Tr;
 import com.ibm.websphere.ras.TraceComponent;
 import com.ibm.websphere.ras.annotation.Sensitive;
@@ -51,15 +56,19 @@ import com.ibm.ws.javaee.ddmodel.wsbnd.Port;
 import com.ibm.ws.javaee.ddmodel.wsbnd.WebservicesBnd;
 import com.ibm.ws.jaxws.client.JaxWsClientHandlerResolver;
 import com.ibm.ws.jaxws.client.LibertyProviderImpl;
+import com.ibm.ws.jaxws.metadata.EndpointInfo;
 import com.ibm.ws.jaxws.metadata.JaxWsClientMetaData;
+import com.ibm.ws.jaxws.metadata.JaxWsModuleInfo;
+import com.ibm.ws.jaxws.metadata.JaxWsModuleMetaData;
 import com.ibm.ws.jaxws.metadata.PortComponentRefInfo;
 import com.ibm.ws.jaxws.metadata.WebServiceRefInfo;
 import com.ibm.ws.jaxws.security.JaxWsSecurityConfigurationService;
 import com.ibm.ws.jaxws.support.JaxWsMetaDataManager;
-import com.ibm.ws.jaxws.support.LibertyHTTPTransportFactory;
 import com.ibm.ws.jaxws.utils.JaxWsUtils;
 import com.ibm.ws.runtime.metadata.ComponentMetaData;
 import com.ibm.ws.runtime.metadata.ModuleMetaData;
+import com.ibm.wsspi.adaptable.module.Container;
+import com.ibm.wsspi.adaptable.module.NonPersistentCache;
 import com.ibm.wsspi.adaptable.module.UnableToAdaptException;
 import com.ibm.wsspi.kernel.service.utils.AtomicServiceReference;
 
@@ -75,6 +84,15 @@ public class ServiceRefObjectFactory implements javax.naming.spi.ObjectFactory {
     private static final TraceComponent tc = Tr.register(ServiceRefObjectFactory.class);
 
     private final AtomicServiceReference<JaxWsSecurityConfigurationService> securityConfigSR = new AtomicServiceReference<JaxWsSecurityConfigurationService>("securityConfigurationService");
+
+    /**
+     * For getting the https host+port
+     */
+    private DynamicMBean httpsendpointInfoMBean;
+
+    private DynamicMBean httpendpointInfoMBean;
+
+    private ServerInfoMBean serverInfoMBean;
 
     @Activate
     protected void activate(ComponentContext cCtx) {
@@ -92,11 +110,105 @@ public class ServiceRefObjectFactory implements javax.naming.spi.ObjectFactory {
     protected void setSecurityConfigurationService(ServiceReference<JaxWsSecurityConfigurationService> serviceRef) {
         securityConfigSR.setReference(serviceRef);
         LibertyProviderImpl.setSecurityConfigService(securityConfigSR);
-        LibertyHTTPTransportFactory.setSecurityConfigService(securityConfigSR);
     }
 
     protected void unsetSecurityConfigurationService(ServiceReference<JaxWsSecurityConfigurationService> serviceRef) {
         securityConfigSR.unsetReference(serviceRef);
+    }
+
+    @org.osgi.service.component.annotations.Reference(target = "(jmx.objectname=WebSphere:feature=channelfw,type=endpoint,name=defaultHttpEndpoint)",
+                                                      cardinality = ReferenceCardinality.OPTIONAL,
+                                                      policy = ReferencePolicy.DYNAMIC,
+                                                      policyOption = ReferencePolicyOption.GREEDY)
+    protected void setEndPointInfoMBean(DynamicMBean endpointInfoMBean) {
+        this.httpendpointInfoMBean = endpointInfoMBean;
+    }
+
+    protected void unsetEndPointInfoMBean(DynamicMBean endpointInfoMBean) {
+        if (this.httpendpointInfoMBean == endpointInfoMBean) {
+            this.httpendpointInfoMBean = null;
+        }
+    }
+
+    @org.osgi.service.component.annotations.Reference(target = "(jmx.objectname=WebSphere:feature=channelfw,type=endpoint,name=defaultHttpEndpoint-ssl)",
+                                                      cardinality = ReferenceCardinality.OPTIONAL,
+                                                      policy = ReferencePolicy.DYNAMIC,
+                                                      policyOption = ReferencePolicyOption.GREEDY)
+    protected void setHttpsEndPointInfoMBean(DynamicMBean endpointInfoMBean) {
+        this.httpsendpointInfoMBean = endpointInfoMBean;
+    }
+
+    protected void unsetHttpsEndPointInfoMBean(DynamicMBean endpointInfoMBean) {
+        if (this.httpsendpointInfoMBean == endpointInfoMBean) {
+            this.httpsendpointInfoMBean = null;
+        }
+    }
+
+    /**
+     * DS injection
+     */
+    @org.osgi.service.component.annotations.Reference
+    protected void setServerInfoMBean(ServerInfoMBean serverInfoMBean) {
+        this.serverInfoMBean = serverInfoMBean;
+    }
+
+    public String getWsdlUrl() {
+        if (httpsendpointInfoMBean != null) {
+            try {
+                String host = resolveHost((String) httpsendpointInfoMBean.getAttribute("Host"));
+                int port = (Integer) httpsendpointInfoMBean.getAttribute("Port");
+                return "https://" + host + ":" + port;
+            } catch (Exception e) {
+
+            }
+        }
+        if (httpendpointInfoMBean != null) {
+            try {
+                String host = resolveHost((String) httpendpointInfoMBean.getAttribute("Host"));
+                int port = (Integer) httpendpointInfoMBean.getAttribute("Port");
+                return "http://" + host + ":" + port;
+            } catch (Exception e) {
+
+            }
+        }
+        return null;
+    }
+
+    /**
+     * If the given host is "*", try to resolve this to a hostname or ip address
+     * by first checking the configured ${defaultHostName}. If ${defaultHostName} is
+     * "*", "localhost", or not specified, try obtaining the local ip address via InetAddress.
+     *
+     * @return the resolved host, or "localhost" if the host could not be resolved
+     */
+    protected String resolveHost(String host) {
+        if ("*".equals(host)) {
+            // Check configured ${defaultHostName}
+            host = serverInfoMBean.getDefaultHostname();
+            if (host == null || host.equals("localhost")) {
+                // This is, as a default, not useful. Use the local IP address instead.
+                host = getLocalHostIpAddress();
+            }
+        }
+        return (host == null || host.trim().isEmpty()) ? "localhost" : host;
+    }
+
+    /**
+     * @return InetAddress.getLocalHost().getHostAddress(); or null if that fails.
+     */
+    protected String getLocalHostIpAddress() {
+        try {
+            return AccessController.doPrivileged(new PrivilegedExceptionAction<String>() {
+                @Override
+                public String run() throws UnknownHostException {
+                    return InetAddress.getLocalHost().getHostAddress();
+                }
+            });
+
+        } catch (PrivilegedActionException pae) {
+            // FFDC it
+            return null;
+        }
     }
 
     public ServiceRefObjectFactory() {
@@ -133,11 +245,13 @@ public class ServiceRefObjectFactory implements javax.naming.spi.ObjectFactory {
 
         if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
             Tr.debug(tc, "Service Ref JNDI name: " + wsrInfo.getJndiName());
+            // ~Berksan added
+            Tr.debug(tc, "Berksan~wsrInfo: " + wsrInfo);
         }
 
         // Get the client metadata
         JaxWsClientMetaData declaredClientMetaData = wsrInfo.getClientMetaData();
-        //146981
+
         if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled())
             Tr.debug(tc, "declaredClientMetaData: " + declaredClientMetaData);
         JaxWsClientMetaData currentClientMetaData = JaxWsMetaDataManager.getJaxWsClientMetaData();
@@ -161,7 +275,7 @@ public class ServiceRefObjectFactory implements javax.naming.spi.ObjectFactory {
         try {
             BusFactory.setThreadDefaultBus(declaredClientMetaData.getClientBus());
             // Collect all of our module-specific service-ref metadata.
-            TransientWebServiceRefInfo tInfo = new TransientWebServiceRefInfo(declaredClientMetaData, wsrInfo, declaredClientMetaData.getModuleMetaData().getAppContextClassLoader());
+            TransientWebServiceRefInfo tInfo = new TransientWebServiceRefInfo(declaredClientMetaData, wsrInfo, currentClientMetaData.getModuleMetaData().getAppContextClassLoader());
             Object instance = getInstance(tInfo, wsrInfo);
             return instance;
         } finally {
@@ -268,14 +382,82 @@ public class ServiceRefObjectFactory implements javax.naming.spi.ObjectFactory {
         // to be null, a service instance will be created without the use of
         // the WSDL document we supplied
         final URL url = tInfo.getWsdlURL();
+
+        //jsr-109:
+//        For co-located clients (where the client and the server are in the same Java EE application unit) with
+//        generated Service class, the location of the final WSDL document is resolved by comparing the Service name
+//        on the @WebServiceClient annotation on the the generated Service to the Service names of all the deployed
+//        port components in the Java EE application unit
+
+        // Future plan need to consider:
+//        if it is a co-located clients, need to verify the defined wsdlLocation and make it use the dynamic one
+//        if there is no wsdlLocation defined, need to use the dynamic one
+//        need to consider in the ear level
+//        need to consider virtual host
+
+        if (url == null) {
+            JaxWsModuleMetaData jaxwsModuleMetaData = tInfo.getClientMetaData().getModuleMetaData();
+            String applicationName = jaxwsModuleMetaData.getJ2EEName().getApplication();
+            String contextRoot = jaxwsModuleMetaData.getContextRoot();
+            Map<String, String> appNameURLMap = jaxwsModuleMetaData.getAppNameURLMap();
+            Container moduleContainer = jaxwsModuleMetaData.getModuleContainer();
+            NonPersistentCache overlayCache;
+            try {
+                overlayCache = moduleContainer.adapt(NonPersistentCache.class);
+                JaxWsModuleInfo jaxWsModuleInfo = (JaxWsModuleInfo) overlayCache.getFromCache(JaxWsModuleInfo.class);
+                if (jaxWsModuleInfo != null) {
+                    for (EndpointInfo endpointInfo : jaxWsModuleInfo.getEndpointInfos()) {
+                        String address = endpointInfo.getAddress(0).substring(1);
+                        String serviceName = wsrInfo.getServiceQName().getLocalPart();
+                        if (serviceName.equals(address)) {
+                            String wsdlLocation = null;
+                            if ((appNameURLMap != null) && (!appNameURLMap.isEmpty())) {
+                                String applicationURL = appNameURLMap.get(applicationName);
+                                wsdlLocation = applicationURL + "/" + address + "?wsdl";
+                            } else {
+                                wsdlLocation = getWsdlUrl() + contextRoot + "/" + address + "?wsdl";
+                            }
+
+                            final URL newURl = new URL(wsdlLocation);
+                            wsrInfo.setWsdlLocation(wsdlLocation);
+
+                            try {
+                                final Constructor<?> finalConstructor = constructor;
+                                final QName serviceQName = tInfo.getServiceQName();
+                                instance = (Service) AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
+                                    @Override
+                                    public Object run() throws InstantiationException, IllegalAccessException, InvocationTargetException {
+                                        finalConstructor.setAccessible(true);
+                                        return finalConstructor.newInstance(new Object[] { newURl, serviceQName });
+                                    }
+                                });
+                            } catch (PrivilegedActionException e) {
+                                if (e.getException() != null) {
+                                    throw e.getException();
+                                } else {
+                                    throw e;
+                                }
+                            }
+                            break;
+
+                        }
+
+                    }
+                }
+            } catch (UnableToAdaptException e) {
+
+            }
+        }
+        if (instance != null) {
+            return instance;
+        }
+
         if (url != null) {
             if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
                 Tr.debug(tc, "Creating Service with WSDL URL: " + url + " and QName: " + tInfo.getServiceQName() + " for class: " + svcSubClass.getName());
             }
         }
-        ClassLoader currentThreadClassLoader = Thread.currentThread().getContextClassLoader();
         try {
-            Thread.currentThread().setContextClassLoader(tInfo.classLoader);
             final Constructor<?> finalConstructor = constructor;
             final QName serviceQName = tInfo.getServiceQName();
             instance = (Service) AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
@@ -291,8 +473,6 @@ public class ServiceRefObjectFactory implements javax.naming.spi.ObjectFactory {
             } else {
                 throw e;
             }
-        } finally {
-            Thread.currentThread().setContextClassLoader(currentThreadClassLoader);
         }
 
         return instance;
@@ -500,9 +680,7 @@ public class ServiceRefObjectFactory implements javax.naming.spi.ObjectFactory {
         }
 
         if (webServicesBnd != null) {
-//            J2EEName j2eeName = jaxwsClientMetaData.getModuleMetaData().getJ2EEName();
-////            J2EEName j2eeName = ivNameSpaceConfig.getJ2EEName();
-//            String componenetName = (null != j2eeName) ? j2eeName.getComponent() : null;
+
             String componenetName = wsrInfo.getComponenetName();
             com.ibm.ws.javaee.ddmodel.wsbnd.ServiceRef serviceRef = webServicesBnd.getServiceRef(wsrInfo.getJndiName(), componenetName);
 

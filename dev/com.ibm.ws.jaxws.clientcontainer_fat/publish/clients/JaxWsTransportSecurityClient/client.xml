@@ -1,9 +1,11 @@
 <client>
-	<include location="../fatTestPorts.xml"/>
+	
     <featureManager>
-        <feature>javaeeClient-7.0</feature>
     	<feature>appSecurityClient-1.0</feature>
-    </featureManager>
+        <feature>javaeeClient-8.0</feature>
+	</featureManager>
+    
+    <include location="../fatTestPorts.xml"/>
     
     <!-- use the default SSL configuration -->
     <keyStore id="defaultKeyStore" password="passw0rd" location="serverKey.jks"/>
@@ -19,4 +21,6 @@
   	<javaPermission className="java.net.SocketPermission" name="*" actions="connect,resolve"/>
   	<javaPermission className="java.io.FilePermission" name="ALL FILES" actions="read"/>
   	<javaPermission className="java.lang.reflect.ReflectPermission" name="suppressAccessChecks"/>
+  	
+  	<logging traceSpecification="*=debug:com.ibm.ws.jaxws.*=all:com.ibm.ws.jaxws23.*=all:org.apache.cxf.*=all:com.ibm.ws.jaxb.*=all:javax.xml.ws.*=all:javax.xml.bind.*=all"/>
 </client>

@@ -10,7 +10,6 @@
  *******************************************************************************/
 package com.ibm.ws.jaxws.client;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +28,6 @@ import com.ibm.ws.jaxws.metadata.ParamValueInfo;
 import com.ibm.ws.jaxws.support.JaxWsInstanceManager.InstanceInterceptor;
 import com.ibm.ws.jaxws.support.JaxWsInstanceManager.InterceptException;
 import com.ibm.ws.jaxws.support.JaxWsInstanceManager.InterceptorContext;
-import com.ibm.ws.jaxws.utils.ResourceUtils;
 
 /**
  *
@@ -46,12 +44,7 @@ public class JaxWsHandlerChainInstanceInterceptor implements InstanceInterceptor
 
     @Override
     public void postNewInstance(InterceptorContext ctx) throws InterceptException {
-        Object o = ctx.getInstance();
-        configureHandler((Handler<?>) o);
-
-        Method postConstructMethod = ResourceUtils.findPostConstructMethod(o.getClass());
-        ResourceUtils.invokeLifeCycleMethod(o, postConstructMethod);
-
+        configureHandler((Handler<?>) ctx.getInstance());
     }
 
     @Override
@@ -61,12 +54,6 @@ public class JaxWsHandlerChainInstanceInterceptor implements InstanceInterceptor
 
     @Override
     public void preDestroyInstance(InterceptorContext ctx) throws InterceptException {
-
-        Object o = ctx.getInstance();
-        configureHandler((Handler<?>) o);
-
-        Method preDestroyMethod = ResourceUtils.findPreDestroyMethod(o.getClass());
-        ResourceUtils.invokeLifeCycleMethod(o, preDestroyMethod);
 
     }
 

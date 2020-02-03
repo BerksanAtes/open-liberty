@@ -15,7 +15,10 @@ import java.util.List;
 import com.ibm.websphere.ras.Tr;
 import com.ibm.websphere.ras.TraceComponent;
 import com.ibm.ws.jaxws.metadata.JaxWsModuleMetaData;
+import com.ibm.ws.jaxws.support.JaxWsInstanceManager.InstanceInterceptor;
+import com.ibm.ws.jaxws.utils.JaxWsUtils;
 import com.ibm.ws.runtime.metadata.ModuleMetaData;
+import com.ibm.wsspi.adaptable.module.UnableToAdaptException;
 import com.ibm.wsspi.injectionengine.InjectionException;
 import com.ibm.wsspi.injectionengine.InjectionMetaData;
 import com.ibm.wsspi.injectionengine.InjectionMetaDataListener;
@@ -31,7 +34,6 @@ public class JaxWsInjectionMetaDataListener implements InjectionMetaDataListener
     @Override
     public void injectionMetaDataCreated(InjectionMetaData injectionMetaData) throws InjectionException {
 
-        // PI22432 Adding the judgement for null
         if (injectionMetaData == null)
             return;
 
@@ -66,17 +68,17 @@ public class JaxWsInjectionMetaDataListener implements InjectionMetaDataListener
             }
         }
 
-//        try {
-//            if (JaxWsUtils.isEJBModule(jaxWsmoduleMetaData.getModuleContainer())) {
-//                //only one ReferenceContextInjectionInstanceInterceptor is needed in InstanceManager
-//                InstanceInterceptor interceptor = jaxWsmoduleMetaData.getJaxWsInstanceManager().getInterceptor(ReferenceContextInjectionInstanceInterceptor.class.getName());
-//                if (interceptor == null) {
-//                    jaxWsmoduleMetaData.getJaxWsInstanceManager().addInterceptor(new ReferenceContextInjectionInstanceInterceptor(jaxWsmoduleMetaData.getReferenceContextMap()));
-//                }
-//            }
-//        } catch (UnableToAdaptException e) {
-//            throw new InjectionException(e);
-//        }
+        try {
+            if (JaxWsUtils.isEJBModule(jaxWsmoduleMetaData.getModuleContainer())) {
+                //only one ReferenceContextInjectionInstanceInterceptor is needed in InstanceManager
+                InstanceInterceptor interceptor = jaxWsmoduleMetaData.getJaxWsInstanceManager().getInterceptor(ReferenceContextInjectionInstanceInterceptor.class.getName());
+                if (interceptor == null) {
+                    jaxWsmoduleMetaData.getJaxWsInstanceManager().addInterceptor(new ReferenceContextInjectionInstanceInterceptor(jaxWsmoduleMetaData.getReferenceContextMap()));
+                }
+            }
+        } catch (UnableToAdaptException e) {
+            throw new InjectionException(e);
+        }
 
     }
 }

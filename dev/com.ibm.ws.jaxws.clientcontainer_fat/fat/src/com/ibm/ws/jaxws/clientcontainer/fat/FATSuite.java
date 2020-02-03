@@ -14,15 +14,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
-import componenttest.custom.junit.runner.AlwaysPassesTest;
-
 @RunWith(Suite.class)
 @SuiteClasses({
-                AlwaysPassesTest.class,
-                ClientSecurityTest.class,
-                AppClientTest.class,
-                JaxbClientTest.class,
-                WsBndServiceRefOverrideTest.class
+//                AlwaysPassesTest.class,
+                ClientSecurityTest.class
+//                AppClientTest.class,
+//                JaxbClientTest.class,
+//                WsBndServiceRefOverrideTest.class
 })
 public class FATSuite {
 }

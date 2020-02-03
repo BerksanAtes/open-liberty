@@ -1,8 +1,8 @@
 <client>
 	<include location="../fatTestPorts.xml"/>
     <featureManager>
-        <feature>javaeeClient-7.0</feature>
-    </featureManager>
+        <feature>javaeeClient-8.0</feature>
+	</featureManager>
     
    <application id="ClientHandler" name="ClientHandler" type="ear" location="ClientHandler.ear"/>
   	<javaPermission className="java.lang.RuntimePermission" name="getClassLoader"/>

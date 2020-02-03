@@ -16,9 +16,9 @@ import java.util.List;
 import java.util.Map;
 
 import com.ibm.websphere.csi.J2EEName;
-import com.ibm.ws.clientcontainer.metadata.ClientModuleMetaData;
 import com.ibm.ws.container.service.app.deploy.ModuleInfo;
 import com.ibm.ws.jaxws.support.JaxWsInstanceManager;
+import com.ibm.ws.jaxws.utils.JaxWsUtils;
 import com.ibm.ws.runtime.metadata.ModuleMetaData;
 import com.ibm.wsspi.adaptable.module.Container;
 import com.ibm.wsspi.injectionengine.ReferenceContext;
@@ -49,14 +49,15 @@ public class JaxWsModuleMetaData {
     // the ModuleMetaDatas which contain the JaxWsModuleMetadata
     private final List<ModuleMetaData> enclosingModuleMetaDatas = new ArrayList<ModuleMetaData>(2);
 
-    public JaxWsModuleMetaData(ClientModuleMetaData moduleMetaData, Container moduleContainer, ClassLoader appContextClassLoader) {
+    private final Map<String, String> appNameURLMap = new HashMap<String, String>();
+
+    private String contextRoot;
+
+    public JaxWsModuleMetaData(ModuleMetaData moduleMetaData, Container moduleContainer, ClassLoader appContextClassLoader) {
         this.moduleContainer = moduleContainer;
         this.enclosingModuleMetaDatas.add(moduleMetaData);
         this.j2EEName = moduleMetaData.getJ2EEName();
-        //Iris Change Start
-//        this.moduleInfo = JaxWsUtils.getModuleInfo(moduleContainer);
-        this.moduleInfo = moduleMetaData.getModuleInfo();
-        //Iris Change End
+        this.moduleInfo = JaxWsUtils.getModuleInfo(moduleContainer);
         this.jaxWsInstanceManager = new JaxWsInstanceManager(moduleInfo.getClassLoader());
         this.appContextClassLoader = appContextClassLoader;
         this.referenceContextMap = new HashMap<Class<?>, ReferenceContext>();
@@ -168,12 +169,34 @@ public class JaxWsModuleMetaData {
         return this.enclosingModuleMetaDatas;
     }
 
+    public Map<String, String> getAppNameURLMap() {
+        return this.appNameURLMap;
+    }
+
+    /**
+     * @return the contextRoot
+     */
+    public String getContextRoot() {
+        return contextRoot;
+    }
+
+    /**
+     * @param contextRoot the contextRoot to set
+     */
+    public void setContextRoot(String contextRoot) {
+        this.contextRoot = contextRoot;
+    }
+
     public void destroy() {
         if (serverMetaData != null) {
             serverMetaData.destroy();
         }
         if (clientMetaData != null) {
             clientMetaData.destroy();
+        }
+
+        if (!appNameURLMap.isEmpty()) {
+            appNameURLMap.clear();
         }
     }
 }
