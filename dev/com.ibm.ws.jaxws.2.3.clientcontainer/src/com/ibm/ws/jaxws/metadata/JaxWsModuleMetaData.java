@@ -16,9 +16,9 @@ import java.util.List;
 import java.util.Map;
 
 import com.ibm.websphere.csi.J2EEName;
+import com.ibm.ws.clientcontainer.metadata.ClientModuleMetaData;
 import com.ibm.ws.container.service.app.deploy.ModuleInfo;
 import com.ibm.ws.jaxws.support.JaxWsInstanceManager;
-import com.ibm.ws.jaxws.utils.JaxWsUtils;
 import com.ibm.ws.runtime.metadata.ModuleMetaData;
 import com.ibm.wsspi.adaptable.module.Container;
 import com.ibm.wsspi.injectionengine.ReferenceContext;
@@ -53,11 +53,12 @@ public class JaxWsModuleMetaData {
 
     private String contextRoot;
 
-    public JaxWsModuleMetaData(ModuleMetaData moduleMetaData, Container moduleContainer, ClassLoader appContextClassLoader) {
+    public JaxWsModuleMetaData(ClientModuleMetaData mmd, Container moduleContainer, ClassLoader appContextClassLoader) {
         this.moduleContainer = moduleContainer;
-        this.enclosingModuleMetaDatas.add(moduleMetaData);
-        this.j2EEName = moduleMetaData.getJ2EEName();
-        this.moduleInfo = JaxWsUtils.getModuleInfo(moduleContainer);
+        this.enclosingModuleMetaDatas.add(mmd);
+        this.j2EEName = mmd.getJ2EEName();
+//      this.moduleInfo = JaxWsUtils.getModuleInfo(moduleContainer);
+        this.moduleInfo = mmd.getModuleInfo();
         this.jaxWsInstanceManager = new JaxWsInstanceManager(moduleInfo.getClassLoader());
         this.appContextClassLoader = appContextClassLoader;
         this.referenceContextMap = new HashMap<Class<?>, ReferenceContext>();

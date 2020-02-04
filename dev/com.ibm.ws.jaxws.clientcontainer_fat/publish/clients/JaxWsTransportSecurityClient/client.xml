@@ -2,7 +2,7 @@
 	
     <featureManager>
     	<feature>appSecurityClient-1.0</feature>
-        <feature>javaeeClient-8.0</feature>
+        <feature>javaeeClient-7.0</feature>
 	</featureManager>
     
     <include location="../fatTestPorts.xml"/>

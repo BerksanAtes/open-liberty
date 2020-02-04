@@ -10,7 +10,6 @@
  *******************************************************************************/
 package com.ibm.ws.jaxws.metadata.builder;
 
-import com.ibm.ws.container.service.app.deploy.extended.ExtendedModuleInfo;
 import com.ibm.ws.jaxws.metadata.JaxWsModuleInfo;
 import com.ibm.ws.jaxws.metadata.JaxWsModuleType;
 import com.ibm.ws.runtime.metadata.ModuleMetaData;
@@ -22,7 +21,7 @@ import com.ibm.wsspi.adaptable.module.UnableToAdaptException;
  */
 public interface JaxWsModuleInfoBuilder {
 
-    public ExtendedModuleInfo build(ModuleMetaData moduleMetaData, Container containerToAdapt, JaxWsModuleInfo jaxWsModuleInfo) throws UnableToAdaptException;
+    public void build(ModuleMetaData moduleMetaData, Container containerToAdapt, JaxWsModuleInfo jaxWsModuleInfo) throws UnableToAdaptException;
 
     public JaxWsModuleType getSupportType();
 

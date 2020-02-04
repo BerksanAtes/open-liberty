@@ -25,7 +25,6 @@ import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
 
 import javax.management.DynamicMBean;
 import javax.naming.Context;
@@ -56,10 +55,7 @@ import com.ibm.ws.javaee.ddmodel.wsbnd.Port;
 import com.ibm.ws.javaee.ddmodel.wsbnd.WebservicesBnd;
 import com.ibm.ws.jaxws.client.JaxWsClientHandlerResolver;
 import com.ibm.ws.jaxws.client.LibertyProviderImpl;
-import com.ibm.ws.jaxws.metadata.EndpointInfo;
 import com.ibm.ws.jaxws.metadata.JaxWsClientMetaData;
-import com.ibm.ws.jaxws.metadata.JaxWsModuleInfo;
-import com.ibm.ws.jaxws.metadata.JaxWsModuleMetaData;
 import com.ibm.ws.jaxws.metadata.PortComponentRefInfo;
 import com.ibm.ws.jaxws.metadata.WebServiceRefInfo;
 import com.ibm.ws.jaxws.security.JaxWsSecurityConfigurationService;
@@ -67,8 +63,6 @@ import com.ibm.ws.jaxws.support.JaxWsMetaDataManager;
 import com.ibm.ws.jaxws.utils.JaxWsUtils;
 import com.ibm.ws.runtime.metadata.ComponentMetaData;
 import com.ibm.ws.runtime.metadata.ModuleMetaData;
-import com.ibm.wsspi.adaptable.module.Container;
-import com.ibm.wsspi.adaptable.module.NonPersistentCache;
 import com.ibm.wsspi.adaptable.module.UnableToAdaptException;
 import com.ibm.wsspi.kernel.service.utils.AtomicServiceReference;
 
@@ -245,8 +239,6 @@ public class ServiceRefObjectFactory implements javax.naming.spi.ObjectFactory {
 
         if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
             Tr.debug(tc, "Service Ref JNDI name: " + wsrInfo.getJndiName());
-            // ~Berksan added
-            Tr.debug(tc, "Berksan~wsrInfo: " + wsrInfo);
         }
 
         // Get the client metadata
@@ -275,7 +267,7 @@ public class ServiceRefObjectFactory implements javax.naming.spi.ObjectFactory {
         try {
             BusFactory.setThreadDefaultBus(declaredClientMetaData.getClientBus());
             // Collect all of our module-specific service-ref metadata.
-            TransientWebServiceRefInfo tInfo = new TransientWebServiceRefInfo(declaredClientMetaData, wsrInfo, currentClientMetaData.getModuleMetaData().getAppContextClassLoader());
+            TransientWebServiceRefInfo tInfo = new TransientWebServiceRefInfo(declaredClientMetaData, wsrInfo, declaredClientMetaData.getModuleMetaData().getAppContextClassLoader());
             Object instance = getInstance(tInfo, wsrInfo);
             return instance;
         } finally {
@@ -382,75 +374,6 @@ public class ServiceRefObjectFactory implements javax.naming.spi.ObjectFactory {
         // to be null, a service instance will be created without the use of
         // the WSDL document we supplied
         final URL url = tInfo.getWsdlURL();
-
-        //jsr-109:
-//        For co-located clients (where the client and the server are in the same Java EE application unit) with
-//        generated Service class, the location of the final WSDL document is resolved by comparing the Service name
-//        on the @WebServiceClient annotation on the the generated Service to the Service names of all the deployed
-//        port components in the Java EE application unit
-
-        // Future plan need to consider:
-//        if it is a co-located clients, need to verify the defined wsdlLocation and make it use the dynamic one
-//        if there is no wsdlLocation defined, need to use the dynamic one
-//        need to consider in the ear level
-//        need to consider virtual host
-
-        if (url == null) {
-            JaxWsModuleMetaData jaxwsModuleMetaData = tInfo.getClientMetaData().getModuleMetaData();
-            String applicationName = jaxwsModuleMetaData.getJ2EEName().getApplication();
-            String contextRoot = jaxwsModuleMetaData.getContextRoot();
-            Map<String, String> appNameURLMap = jaxwsModuleMetaData.getAppNameURLMap();
-            Container moduleContainer = jaxwsModuleMetaData.getModuleContainer();
-            NonPersistentCache overlayCache;
-            try {
-                overlayCache = moduleContainer.adapt(NonPersistentCache.class);
-                JaxWsModuleInfo jaxWsModuleInfo = (JaxWsModuleInfo) overlayCache.getFromCache(JaxWsModuleInfo.class);
-                if (jaxWsModuleInfo != null) {
-                    for (EndpointInfo endpointInfo : jaxWsModuleInfo.getEndpointInfos()) {
-                        String address = endpointInfo.getAddress(0).substring(1);
-                        String serviceName = wsrInfo.getServiceQName().getLocalPart();
-                        if (serviceName.equals(address)) {
-                            String wsdlLocation = null;
-                            if ((appNameURLMap != null) && (!appNameURLMap.isEmpty())) {
-                                String applicationURL = appNameURLMap.get(applicationName);
-                                wsdlLocation = applicationURL + "/" + address + "?wsdl";
-                            } else {
-                                wsdlLocation = getWsdlUrl() + contextRoot + "/" + address + "?wsdl";
-                            }
-
-                            final URL newURl = new URL(wsdlLocation);
-                            wsrInfo.setWsdlLocation(wsdlLocation);
-
-                            try {
-                                final Constructor<?> finalConstructor = constructor;
-                                final QName serviceQName = tInfo.getServiceQName();
-                                instance = (Service) AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
-                                    @Override
-                                    public Object run() throws InstantiationException, IllegalAccessException, InvocationTargetException {
-                                        finalConstructor.setAccessible(true);
-                                        return finalConstructor.newInstance(new Object[] { newURl, serviceQName });
-                                    }
-                                });
-                            } catch (PrivilegedActionException e) {
-                                if (e.getException() != null) {
-                                    throw e.getException();
-                                } else {
-                                    throw e;
-                                }
-                            }
-                            break;
-
-                        }
-
-                    }
-                }
-            } catch (UnableToAdaptException e) {
-
-            }
-        }
-        if (instance != null) {
-            return instance;
-        }
 
         if (url != null) {
             if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {

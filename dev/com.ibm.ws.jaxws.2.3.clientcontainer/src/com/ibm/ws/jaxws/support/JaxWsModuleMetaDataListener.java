@@ -18,11 +18,10 @@ import org.osgi.service.component.ComponentContext;
 
 import com.ibm.websphere.ras.Tr;
 import com.ibm.websphere.ras.TraceComponent;
-import com.ibm.ws.container.service.app.deploy.extended.ExtendedModuleInfo;
+import com.ibm.ws.clientcontainer.metadata.ClientModuleMetaData;
 import com.ibm.ws.container.service.metadata.MetaDataEvent;
 import com.ibm.ws.container.service.metadata.MetaDataSlotService;
 import com.ibm.ws.container.service.metadata.ModuleMetaDataListener;
-import com.ibm.ws.container.service.metadata.extended.ModuleMetaDataExtender;
 import com.ibm.ws.jaxws.metadata.JaxWsModuleInfo;
 import com.ibm.ws.jaxws.metadata.JaxWsModuleMetaData;
 import com.ibm.ws.jaxws.metadata.JaxWsModuleType;
@@ -40,7 +39,7 @@ import com.ibm.wsspi.kernel.service.utils.AtomicServiceReference;
 /**
  * Listening a Web/EJB module metadata events, and build JaxWsModuleInfos.
  */
-public class JaxWsModuleMetaDataListener implements ModuleMetaDataListener, ModuleMetaDataExtender {
+public class JaxWsModuleMetaDataListener implements ModuleMetaDataListener {
 
     private static final TraceComponent tc = Tr.register(JaxWsModuleMetaDataListener.class);
 
@@ -49,98 +48,75 @@ public class JaxWsModuleMetaDataListener implements ModuleMetaDataListener, Modu
     private final AtomicServiceReference<ClassLoadingService> classLoadingServiceSR = new AtomicServiceReference<ClassLoadingService>("classLoadingService");
 
     @Override
-    public ExtendedModuleInfo extendModuleMetaData(ExtendedModuleInfo moduleInfo) {
+    public void moduleMetaDataCreated(MetaDataEvent<ModuleMetaData> event) {
+
+        ModuleMetaData mmd = event.getMetaData();
 
         if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
-            Tr.debug(tc, "extendModuleMetaData(" + moduleInfo.getName() + ") : " + moduleInfo);
+            Tr.debug(tc, "moduleMetaDataCreated(" + mmd.getName() + ") : " + mmd);
         }
 
-        ModuleMetaData mmd = moduleInfo.getMetaData();
+        //Iris Change start
+//        ModuleInfo moduleInfo = JaxWsUtils.getModuleInfo(event.getContainer());
+//        if (moduleInfo == null) {
+//            if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
+//                Tr.debug(tc, "Unsupported Module, no JaxWsModuleMetaData will be created for " + mmd.getName());
+//            }
+//            return;
+//        }
+        if (!(mmd instanceof ClientModuleMetaData))
+            return;
+        //Iris Chane end
 
-        Container moduleContainer = moduleInfo.getContainer();
-
+        Container moduleContainer = event.getContainer();
         try {
-            if (!(JaxWsUtils.isEJBModule(moduleContainer)) &&
-                !(JaxWsUtils.isWebModule(moduleContainer))) {
-                if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
-                    Tr.debug(tc, "Unsupported Module, no JaxWsModuleMetaData will be created for " + moduleInfo.getName());
-                }
-                return null;
-            }
-        } catch (UnableToAdaptException e) {
-            // If the moduleContainer is not adaptable the JaxWsUtils methods called above will throw
-            // this exception.  Since this indicates that this module is not an EJB or Web module we
-            // will simply return.
-            if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
-                Tr.debug(tc, "Unsupported Module, no JaxWsModuleMetaData will be created for " + moduleInfo.getName());
-            }
-            return null;
-        }
-        try {
-            JaxWsModuleMetaData jaxWsModuleMetaData = createJaxWsModuleMetaData(mmd, moduleContainer, moduleInfo.getClassLoader());
-            JaxWsModuleInfo jaxWsModuleInfo = createJaxWsModuleInfo(moduleContainer);
-
-            // process any nested ModuleMetaData instances
-            for (ModuleMetaData nestedMMD : moduleInfo.getNestedMetaData()) {
-                jaxWsModuleMetaData.getEnclosingModuleMetaDatas().add(nestedMMD);
-                JaxWsMetaDataManager.setJaxWsModuleMetaData(nestedMMD, jaxWsModuleMetaData);
-            }
-
-            // find the builder
-            JaxWsModuleInfoBuilder jaxWsModuleInfoBuilder = null;
-            if (JaxWsUtils.isWebModule(moduleContainer)) {
-                jaxWsModuleInfoBuilder = jaxWsModuleInfoBuilderMap.get(JaxWsModuleType.WEB);
-            } else if (JaxWsUtils.isEJBModule(moduleContainer)) {
-                jaxWsModuleInfoBuilder = jaxWsModuleInfoBuilderMap.get(JaxWsModuleType.EJB);
-            }
-
-            // build the JaxWsModuleInfo
-            if (jaxWsModuleInfoBuilder != null) {
-                return jaxWsModuleInfoBuilder.build(mmd, moduleContainer, jaxWsModuleInfo);
+            NonPersistentCache overlayCache = moduleContainer.adapt(NonPersistentCache.class);
+            JaxWsModuleMetaData jaxWsModuleMetaData = (JaxWsModuleMetaData) overlayCache.getFromCache(JaxWsModuleMetaData.class);
+            if (jaxWsModuleMetaData == null) {
+                //Iris Change start
+//                ClassLoader appContextClassLoader = classLoadingServiceSR.getServiceWithException().createThreadContextClassLoader(moduleInfo.getClassLoader());
+                ClassLoader appContextClassLoader = classLoadingServiceSR.getServiceWithException().createThreadContextClassLoader(((ClientModuleMetaData) mmd).getModuleInfo().getClassLoader());
+                //Iris Change End
+                jaxWsModuleMetaData = new JaxWsModuleMetaData((ClientModuleMetaData) mmd, event.getContainer(), appContextClassLoader);
+                overlayCache.addToCache(JaxWsModuleMetaData.class, jaxWsModuleMetaData);
             } else {
-                if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
-                    Tr.debug(tc, "No JaxWsModuleInfoBuilder added to JaxWsModuleMetaDataListener.");
-                }
-                return null;
+                jaxWsModuleMetaData.getEnclosingModuleMetaDatas().add(mmd);
             }
+            JaxWsMetaDataManager.setJaxWsModuleMetaData(mmd, jaxWsModuleMetaData);
+
+            // create the JaxWsModuleInfo
+            JaxWsModuleInfo jaxWsModuleInfo = (JaxWsModuleInfo) overlayCache.getFromCache(JaxWsModuleInfo.class);
+            if (jaxWsModuleInfo == null) { //when the ejb's router web module create, the jaxWsModuleInfo is not null here.
+                if (JaxWsUtils.isWebModule(moduleContainer)) {
+                    jaxWsModuleInfo = new JaxWsModuleInfo(JaxWsModuleType.WEB);
+                } else if (JaxWsUtils.isEJBModule(moduleContainer)) {
+                    jaxWsModuleInfo = new JaxWsModuleInfo(JaxWsModuleType.EJB);
+                }
+            }
+            overlayCache.addToCache(JaxWsModuleInfo.class, jaxWsModuleInfo);
+
+            //Iris Change: no need this part for client container
+            // find the builder
+//            JaxWsModuleInfoBuilder jaxWsModuleInfoBuilder = null;
+//            if (JaxWsUtils.isWebModule(moduleContainer)) {
+//                jaxWsModuleInfoBuilder = jaxWsModuleInfoBuilderMap.get(JaxWsModuleType.WEB);
+//            } else if (JaxWsUtils.isEJBModule(moduleContainer)) {
+//                jaxWsModuleInfoBuilder = jaxWsModuleInfoBuilderMap.get(JaxWsModuleType.EJB);
+//            }
+//
+//            // build the JaxWsModuleInfo
+//            if (jaxWsModuleInfoBuilder != null) {
+//                jaxWsModuleInfoBuilder.build(mmd, moduleContainer, jaxWsModuleInfo);
+//            } else {
+//                if (TraceComponent.isAnyTracingEnabled() && tc.isDebugEnabled()) {
+//                    Tr.debug(tc, "No JaxWsModuleInfoBuilder added to JaxWsModuleMetaDataListener.");
+//                }
+//            }
+            //Iris Change End
 
         } catch (UnableToAdaptException e) {
             throw new IllegalStateException(e);
         }
-    }
-
-    private JaxWsModuleMetaData createJaxWsModuleMetaData(ModuleMetaData mmd, Container moduleContainer, ClassLoader moduleClassLoader) throws UnableToAdaptException {
-        NonPersistentCache overlayCache = moduleContainer.adapt(NonPersistentCache.class);
-        JaxWsModuleMetaData jaxWsModuleMetaData = (JaxWsModuleMetaData) overlayCache.getFromCache(JaxWsModuleMetaData.class);
-        if (jaxWsModuleMetaData == null) {
-            ClassLoader appContextClassLoader = classLoadingServiceSR.getServiceWithException().createThreadContextClassLoader(moduleClassLoader);
-            jaxWsModuleMetaData = new JaxWsModuleMetaData(mmd, moduleContainer, appContextClassLoader);
-            overlayCache.addToCache(JaxWsModuleMetaData.class, jaxWsModuleMetaData);
-        } else {
-            jaxWsModuleMetaData.getEnclosingModuleMetaDatas().add(mmd);
-        }
-        JaxWsMetaDataManager.setJaxWsModuleMetaData(mmd, jaxWsModuleMetaData);
-        return jaxWsModuleMetaData;
-    }
-
-    private JaxWsModuleInfo createJaxWsModuleInfo(Container moduleContainer) throws UnableToAdaptException {
-        // create the JaxWsModuleInfo
-        NonPersistentCache overlayCache = moduleContainer.adapt(NonPersistentCache.class);
-        JaxWsModuleInfo jaxWsModuleInfo = (JaxWsModuleInfo) overlayCache.getFromCache(JaxWsModuleInfo.class);
-        if (jaxWsModuleInfo == null) { //when the ejb's router web module create, the jaxWsModuleInfo is not null here.
-            if (JaxWsUtils.isWebModule(moduleContainer)) {
-                jaxWsModuleInfo = new JaxWsModuleInfo(JaxWsModuleType.WEB);
-            } else if (JaxWsUtils.isEJBModule(moduleContainer)) {
-                jaxWsModuleInfo = new JaxWsModuleInfo(JaxWsModuleType.EJB);
-            }
-        }
-        overlayCache.addToCache(JaxWsModuleInfo.class, jaxWsModuleInfo);
-        return jaxWsModuleInfo;
-    }
-
-    @Override
-    public void moduleMetaDataCreated(MetaDataEvent<ModuleMetaData> event) {
-        //NO-OP
     }
 
     protected void activate(ComponentContext cc) {
