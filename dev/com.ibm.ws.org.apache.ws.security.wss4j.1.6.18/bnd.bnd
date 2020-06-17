@@ -23,4 +23,5 @@ wss4jVersion=1.6.18
 -buildpath: \
   org.apache.ws.security:wss4j;version=${wss4jVersion}, \
   com.ibm.ws.org.apache.santuario.xmlsec.1.5.2, \
-  com.ibm.ws.org.apache.commons.logging.1.0.3;version=latest
+  com.ibm.ws.org.apache.commons.logging.1.0.3;version=latest, \
+  com.ibm.ws.com.sun.xml.messaging.saaj

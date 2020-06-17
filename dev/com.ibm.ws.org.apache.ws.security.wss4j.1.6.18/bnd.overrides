@@ -21,13 +21,11 @@ WS-TraceGroup: WSS4J
 wss4jVersion=1.6.18
 
 DynamicImport-Package: \
- org.bouncycastle.jce.provider, \
- org.apache.ws.security.components.crypto, \
- org.apache.ws.security.saml, \
- com.sun.xml.internal.messaging.saaj.soap
- 
-Private-Package: org.apache.ws.security.cache
- 
+  org.bouncycastle.jce.provider, \
+  org.apache.ws.security.components.crypto, \
+  org.apache.ws.security.saml
+
+
 Export-Package: \
   org.apache.ws.security;version=${wss4jVersion}, \
   org.apache.ws.security.action;version=${wss4jVersion}, \
@@ -46,8 +44,10 @@ Export-Package: \
   org.apache.ws.security.str;version=${wss4jVersion}, \
   org.apache.ws.security.transform;version=${wss4jVersion}, \
   org.apache.ws.security.util;version=${wss4jVersion}, \
-  org.apache.ws.security.validate;version=${wss4jVersion}
-
+  org.apache.ws.security.validate;version=${wss4jVersion}, \
+  org.apache.ws.security.cache;version=${wss4jVersion}, \
+  org.apache.commons.logging, \
+  org.apache.commons.logging.impl
 
 # these should be optional only when resolving jars from wlp/dev
 Import-Package: \
@@ -56,22 +56,36 @@ Import-Package: \
   com.ibm.websphere.ras;resolution:=optional, \
   com.ibm.websphere.ras.annotation;resolution:=optional, \
   com.ibm.ws.ffdc;resolution:=optional, \
-  com.sun.xml.messaging.saaj.soap;resolution:=optional, \
   javax.xml.crypto, \
   javax.xml.crypto.dom, \
   javax.xml.crypto.dsig, \
   javax.xml.crypto.dsig.dom, \
   javax.xml.crypto.dsig.keyinfo, \
   javax.xml.crypto.dsig.spec, \
+  javax.crypto, \
+  javax.crypto.spec, \
+  javax.security.auth, \
+  javax.security.auth.callback, \
+  javax.security.auth.kerberos, \
+  javax.security.auth.login, \
+  javax.security.auth.x500, \
+  javax.xml.namespace, \
+  javax.xml.transform, \
+  javax.xml.transform.dom, \
+  javax.xml.transform.sax, \
+  javax.xml.transform.stream, \
+  org.apache.commons.logging;resolution:=optional, \
   org.apache.xml.security, \
   org.apache.xml.security.algorithms, \
   org.apache.xml.security.c14n, \
   org.apache.xml.security.encryption, \
-  org.apache.xml.security.exceptions,
+  org.apache.xml.security.exceptions, \
   org.apache.xml.security.keys, \
   org.apache.xml.security.signature, \
   org.apache.xml.security.utils, \
   org.apache.jcp.xml.dsig.internal.dom, \
+  org.ietf.jgss;resolution:=optional, \
+  org.joda.time;version="[1.6,2)";resolution:=optional, \
   org.opensaml;resolution:=optional, \
   org.opensaml.common;resolution:=optional, \
   org.opensaml.common.impl;resolution:=optional, \
@@ -89,24 +103,10 @@ Import-Package: \
   org.opensaml.xml.security.x509;resolution:=optional, \
   org.opensaml.xml.signature;resolution:=optional, \
   org.opensaml.xml.validation;resolution:=optional, \
-  org.joda.time;version="[1.6,2)";resolution:=optional, \
-  javax.crypto;resolution:=optional, \
-  javax.crypto.spec;resolution:=optional, \
-  javax.security.auth;resolution:=optional, \
-  javax.security.auth.callback;resolution:=optional, \
-  javax.security.auth.kerberos;resolution:=optional, \
-  javax.security.auth.login;resolution:=optional, \
-  javax.security.auth.x500;resolution:=optional, \
-  javax.xml.namespace;resolution:=optional, \
-  javax.xml.transform;resolution:=optional, \
-  javax.xml.transform.dom;resolution:=optional, \
-  javax.xml.transform.sax;resolution:=optional, \
-  javax.xml.transform.stream;resolution:=optional, \
-  org.apache.commons.logging;resolution:=optional, \
-  org.ietf.jgss;resolution:=optional, \
   org.slf4j;resolution:=optional;version="[1.7,2)", \
-  org.w3c.dom;resolution:=optional, \
-  org.xml.sax;resolution:=optional
+  org.w3c.dom, \
+  org.xml.sax;resolution:=optional, \
+  com.sun.xml.internal.messaging.saaj.soap
 
 Build-Jdk:
 Built-By:
