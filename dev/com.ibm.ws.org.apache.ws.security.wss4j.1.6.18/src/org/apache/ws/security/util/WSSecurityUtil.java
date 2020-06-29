@@ -64,31 +64,35 @@ public final class WSSecurityUtil {
     private static boolean isJava9SAAJ = false;
 
     private static org.apache.commons.logging.Log log = org.apache.commons.logging.LogFactory.getLog(WSSecurityUtil.class);
+    
+    private static Method[] methods;
 
     //@TJJ BEGIN
     static {
-        try {
-            Method[] methods = WSSecurityUtil.class.getClassLoader().loadClass("com.sun.xml.messaging.saaj.soap.SOAPDocumentImpl").getMethods();
-            for (Method method : methods) {
-                if (method.getName().equals("register")) {
-                    //this is the SAAJ impl in JDK9
-                    isJava9SAAJ = true;
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException cnfe1) {
-            log.debug("can't load class com.sun.xml.messaging.saaj.soap.SOAPDocumentImpl");
-            //cnfe1.printStackTrace();
+        if (!System.getProperty("java.specification.version").startsWith("1.")) {
+            log.debug("@TJJ its java9 or >");
             try {
-                Method[] methods = WSSecurityUtil.class.getClassLoader().loadClass("com.sun.xml.internal.messaging.saaj.soap.SOAPDocumentImpl").getMethods();
+                methods = WSSecurityUtil.class.getClassLoader().loadClass("com.sun.xml.messaging.saaj.soap.SOAPDocumentImpl").getMethods();
                 for (Method method : methods) {
                     if (method.getName().equals("register")) {
-                        //this is the SAAJ impl in JDK9
                         isJava9SAAJ = true;
                         break;
                     }
                 }
-            } catch (ClassNotFoundException cnfe2) {
+            } catch (ClassNotFoundException cnfe1) {
+                log.debug("can't load class com.sun.xml.messaging.saaj.soap.SOAPDocumentImpl");
+                System.out.println("can't load class com.sun.xml.messaging.saaj.soap.SOAPDocumentImpl");
+                cnfe1.printStackTrace();
+            }
+            try {
+                methods = WSSecurityUtil.class.getClassLoader().loadClass("com.sun.xml.internal.messaging.saaj.soap.SOAPDocumentImpl").getMethods();
+                for (Method method : methods) {
+                    if (method.getName().equals("register")) {
+                        isJava9SAAJ = true;
+                        break;
+                    }
+                }
+            } catch (ClassNotFoundException cnfe1) {
                 log.debug("can't load class com.sun.xml.internal.messaging.saaj.soap.SOAPDocumentImpl");
             }
         }
@@ -1419,7 +1423,7 @@ public final class WSSecurityUtil {
 
         if (!System.getProperty("java.version").startsWith("1.")) {
             try {
-log.info("~node name:"+node.getClass().getName());
+                log.info("~node name:" + node.getClass().getName());
                 Method method = node.getClass().getMethod("getDomElement");
                 node = (Node) method.invoke(node);
                 //log.info("getDomElement node after invoking method == " + node);

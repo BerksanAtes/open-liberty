@@ -23,8 +23,7 @@ wss4jVersion=1.6.18
 DynamicImport-Package: \
   org.bouncycastle.jce.provider, \
   org.apache.ws.security.components.crypto, \
-  org.apache.ws.security.saml, \
-  com.sun.xml.messaging.saaj.soap
+  org.apache.ws.security.saml
 
 Export-Package: \
   org.apache.ws.security;version=${wss4jVersion}, \
@@ -105,7 +104,9 @@ Import-Package: \
   org.opensaml.xml.validation;resolution:=optional, \
   org.slf4j;resolution:=optional;version="[1.7,2)", \
   org.w3c.dom, \
-  org.xml.sax;resolution:=optional
+  org.xml.sax;resolution:=optional, \
+  com.sun.xml.messaging.saaj.soap.*;version="1.4.0";resolution:=optional, \
+  com.sun.xml.internal.messaging.saaj.soap.*;version="1.4.0";resolution:=optional
 
 Build-Jdk:
 Built-By:
