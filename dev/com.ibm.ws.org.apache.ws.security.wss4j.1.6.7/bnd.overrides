@@ -13,7 +13,7 @@ bVersion=1.0
 
 Bundle-Name: org.apache.cxf.ws.wss4j
 Bundle-Description: org.apache.cxf.ws wss4j 1.6.18; version=1.6.18
-Bundle-SymbolicName: com.ibm.ws.org.apache.ws.security.wss4j.1.6.18
+Bundle-SymbolicName: com.ibm.ws.org.apache.ws.security.wss4j.1.6.7
 Bundle-ActivationPolicy: lazy
 
 WS-TraceGroup: WSS4J
