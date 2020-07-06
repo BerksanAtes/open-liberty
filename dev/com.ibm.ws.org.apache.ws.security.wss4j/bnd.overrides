@@ -28,6 +28,7 @@ DynamicImport-Package: \
 Export-Package: \
   org.apache.ws.security;version=${wss4jVersion}, \
   org.apache.ws.security.action;version=${wss4jVersion}, \
+  org.apache.ws.security.cache;version=${wss4jVersion}, \
   org.apache.ws.security.components.crypto;version=${wss4jVersion}, \
   org.apache.ws.security.conversation;version=${wss4jVersion}, \
   org.apache.ws.security.conversation.dkalgo;version=${wss4jVersion}, \
@@ -43,10 +44,7 @@ Export-Package: \
   org.apache.ws.security.str;version=${wss4jVersion}, \
   org.apache.ws.security.transform;version=${wss4jVersion}, \
   org.apache.ws.security.util;version=${wss4jVersion}, \
-  org.apache.ws.security.validate;version=${wss4jVersion}, \
-  org.apache.ws.security.cache;version=${wss4jVersion}, \
-  org.apache.commons.logging, \
-  org.apache.commons.logging.impl
+  org.apache.ws.security.validate;version=${wss4jVersion}
 
 # these should be optional only when resolving jars from wlp/dev
 Import-Package: \
@@ -83,7 +81,25 @@ Import-Package: \
   org.apache.xml.security.signature, \
   org.apache.xml.security.utils, \
   org.apache.jcp.xml.dsig.internal.dom, \
-  org.ietf.jgss;resolution:=optional, \
+  org.apache.ws.security;version="[1.6,2)", \
+  org.apache.ws.security.action;version="[1.6,2)", \
+  org.apache.ws.security.cache;version="[1.6,2)", \
+  org.apache.ws.security.components.crypto;version="[1.6,2)", \
+  org.apache.ws.security.conversation;version="[1.6,2)", \
+  org.apache.ws.security.conversation.dkalgo;version="[1.6,2)", \
+  org.apache.ws.security.handler;version="[1.6,2)", \
+  org.apache.ws.security.message;version="[1.6,2)", \
+  org.apache.ws.security.message.token;version="[1.6,2)", \
+  org.apache.ws.security.processor;version="[1.6,2)", \
+  org.apache.ws.security.saml;version="[1.6,2)", \
+  org.apache.ws.security.saml.ext;version="[1.6,2)", \
+  org.apache.ws.security.saml.ext.bean;version="[1.6,2)", \
+  org.apache.ws.security.saml.ext.builder;version="[1.6,2)", \
+  org.apache.ws.security.str;version="[1.6,2)", \
+  org.apache.ws.security.transform;version="[1.6,2)", \
+  org.apache.ws.security.util;version="[1.6,2)", \
+  org.apache.ws.security.validate;version="[1.6,2)", \
+  org.ietf.jgss, \
   org.joda.time;version="[1.6,2)";resolution:=optional, \
   org.opensaml;resolution:=optional, \
   org.opensaml.common;resolution:=optional, \
@@ -102,11 +118,10 @@ Import-Package: \
   org.opensaml.xml.security.x509;resolution:=optional, \
   org.opensaml.xml.signature;resolution:=optional, \
   org.opensaml.xml.validation;resolution:=optional, \
-  org.slf4j;resolution:=optional;version="[1.7,2)", \
+  org.slf4j, \
   org.w3c.dom, \
-  org.xml.sax;resolution:=optional, \
-  com.sun.xml.messaging.saaj.soap;version="1.4.0";resolution:=optional, \
-  com.sun.xml.internal.messaging.saaj.soap;version="1.4.0";resolution:=optional
+  org.xml.sax, \
+  com.sun.xml.messaging.saaj.soap;resolution:=optional
 
 Build-Jdk:
 Built-By:

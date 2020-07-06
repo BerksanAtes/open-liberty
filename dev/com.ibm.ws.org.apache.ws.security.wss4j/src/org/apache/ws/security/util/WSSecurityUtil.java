@@ -692,11 +692,23 @@ public final class WSSecurityUtil {
     public static Element prependChildElement(
                                               Element parent,
                                               Element child) {
+//        Node firstChild = parent.getFirstChild();
+//        if (firstChild == null) {
+//            return (Element) parent.appendChild(child);
+//        } else {
+//            return (Element) parent.insertBefore(child, firstChild);
+//        }
         Node firstChild = parent.getFirstChild();
+        Element domChild = null;
+        try {
+            domChild = (Element) getDomElement(child);
+        } catch (WSSecurityException e) {
+            log.debug("Error trying to get Dom Element from the child");
+        }
         if (firstChild == null) {
-            return (Element) parent.appendChild(child);
+            return (Element) parent.appendChild(domChild);
         } else {
-            return (Element) parent.insertBefore(child, firstChild);
+            return (Element) parent.insertBefore(domChild, firstChild);
         }
     }
 
@@ -1423,7 +1435,6 @@ public final class WSSecurityUtil {
 
         if (!System.getProperty("java.version").startsWith("1.")) {
             try {
-                log.info("~node name:" + node.getClass().getName());
                 Method method = node.getClass().getMethod("getDomElement");
                 node = (Node) method.invoke(node);
                 //log.info("getDomElement node after invoking method == " + node);
