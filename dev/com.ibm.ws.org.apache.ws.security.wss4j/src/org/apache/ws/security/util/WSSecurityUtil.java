@@ -64,15 +64,13 @@ public final class WSSecurityUtil {
     private static boolean isJava9SAAJ = false;
 
     private static org.apache.commons.logging.Log log = org.apache.commons.logging.LogFactory.getLog(WSSecurityUtil.class);
-    
-    private static Method[] methods;
 
     //@TJJ BEGIN
     static {
         if (!System.getProperty("java.specification.version").startsWith("1.")) {
             log.debug("@TJJ its java9 or >");
             try {
-                methods = WSSecurityUtil.class.getClassLoader().loadClass("com.sun.xml.messaging.saaj.soap.SOAPDocumentImpl").getMethods();
+                Method[] methods = WSSecurityUtil.class.getClassLoader().loadClass("com.sun.xml.messaging.saaj.soap.SOAPDocumentImpl").getMethods();
                 for (Method method : methods) {
                     if (method.getName().equals("register")) {
                         isJava9SAAJ = true;
@@ -85,7 +83,7 @@ public final class WSSecurityUtil {
                 cnfe1.printStackTrace();
             }
             try {
-                methods = WSSecurityUtil.class.getClassLoader().loadClass("com.sun.xml.internal.messaging.saaj.soap.SOAPDocumentImpl").getMethods();
+                Method[] methods = WSSecurityUtil.class.getClassLoader().loadClass("com.sun.xml.internal.messaging.saaj.soap.SOAPDocumentImpl").getMethods();
                 for (Method method : methods) {
                     if (method.getName().equals("register")) {
                         isJava9SAAJ = true;

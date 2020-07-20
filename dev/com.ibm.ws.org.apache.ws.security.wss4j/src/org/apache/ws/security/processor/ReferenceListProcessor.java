@@ -331,7 +331,7 @@ public class ReferenceListProcessor implements Processor {
         boolean content = X509Util.isContent(encData);
         dataRef.setContent(content);
         
-		encData = (Element) WSSecurityUtil.getDomElement(encData);
+	//~	encData = (Element) WSSecurityUtil.getDomElement(encData);
 		
         Node parent = encData.getParentNode();
         Node previousSibling = encData.getPreviousSibling();

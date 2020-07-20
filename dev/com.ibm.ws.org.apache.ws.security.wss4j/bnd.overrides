@@ -121,7 +121,7 @@ Import-Package: \
   org.slf4j, \
   org.w3c.dom, \
   org.xml.sax, \
-  com.sun.xml.messaging.saaj.soap;resolution:=optional
+  !com.sun.xml.messaging.saaj.soap;resolution:=optional
 
 Build-Jdk:
 Built-By:
