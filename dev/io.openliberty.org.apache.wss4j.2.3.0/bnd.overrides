@@ -1,0 +1,41 @@
+#*******************************************************************************
+# Copyright (c) 2020 IBM Corporation and others.
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Eclipse Public License v1.0
+# which accompanies this distribution, and is available at
+# http://www.eclipse.org/legal/epl-v10.html
+#
+# Contributors:
+#     IBM Corporation - initial API and implementation
+#*******************************************************************************
+-include= ~../cnf/resources/bnd/rejar.props
+bVersion=1.0
+
+Bundle-Name: io.openliberty.org.apache.wss4j.2.3.0
+Bundle-Description: org.apache.cxf.wss4j combined; version=2.3.0
+Bundle-SymbolicName: io.openliberty.org.apache.wss4j.2.3.0
+Bundle-ActivationPolicy: lazy
+
+WS-TraceGroup: WSS4J
+
+Export-Package: \
+  org.apache.wss4j.*;version=2.3.0
+
+# these should be optional only when resolving jars from wlp/dev
+Import-Package: \
+  !com.ibm.security.jgss, \
+  !org.bouncycastle.asn1.x509, \
+ *
+
+
+Build-Jdk:
+Built-By:
+Bundle-DocURL:
+Bundle-License:
+Implementation-Title:
+Implementation-Vendor:
+Implementation-Vendor-Id:
+Implementation-Version:
+Specification-Title:
+Specification-Vendor:
+Specification-Version:

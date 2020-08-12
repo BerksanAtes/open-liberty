@@ -1,0 +1,20 @@
+-include= ~../cnf/resources/bnd/rejar.props
+bVersion=1.0
+
+Bundle-Name: io.openliberty.org.joda.time.2.9.9
+Bundle-Description: io.openliberty.org.joda.time; version=2.9.9
+Bundle-SymbolicName: io.openliberty.org.joda.time.2.9.9
+
+WS-TraceGroup: WSS4J
+
+Export-Package: \
+  org.joda.time, \
+  org.joda.time.chrono, \
+  org.joda.time.format
+
+Import-Package: \
+  !org.joda.convert
+
+Private-Package: \
+  org.joda.time.*
+

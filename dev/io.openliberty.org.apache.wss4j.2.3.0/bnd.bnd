@@ -1,0 +1,49 @@
+#*******************************************************************************
+# Copyright (c) 2019 IBM Corporation and others.
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Eclipse Public License v1.0
+# which accompanies this distribution, and is available at
+# http://www.eclipse.org/legal/epl-v10.html
+#
+# Contributors:
+#     IBM Corporation - initial API and implementation
+#*******************************************************************************
+-include= \
+  jar:${fileuri;${repo;org.apache.cxf:wss4j-ws-security-common;2.3.0;EXACT}}!/META-INF/MANIFEST.MF, \
+  jar:${fileuri;${repo;org.apache.wss4j:wss4j-bindings;2.3.0;EXACT}}!/META-INF/MANIFEST.MF, \
+  jar:${fileuri;${repo;org.apache.cxf:wss4j-policy;2.3.0;EXACT}}!/META-INF/MANIFEST.MF, \
+  jar:${fileuri;${repo;org.apache.cxf:wss4j-ws-security-dom;2.3.0;EXACT}}!/META-INF/MANIFEST.MF, \
+  jar:${fileuri;${repo;org.apache.cxf:wss4j-ws-security-policy-stax;2.3.0;EXACT}}!/META-INF/MANIFEST.MF, \
+  jar:${fileuri;${repo;org.apache.cxf:wss4j-ws-security-stax;2.3.0;EXACT}}!/META-INF/MANIFEST.MF, \
+  jar:${fileuri;${repo;org.apache.wss4j:wss4j-ws-security-web;2.3.0;EXACT}}!/META-INF/MANIFEST.MF, \
+  bnd.overrides
+
+wss4jVersion=2.3.0
+
+-includeresource: \
+  @${repo;org.apache.cxf:wss4j-ws-security-common;${wss4jVersion};EXACT}!/!META-INF/MANIFEST.MF|META-INF/maven/*, \
+  @${repo;org.apache.cxf:wss4j-ws-security-common;${wss4jVersion};EXACT}!/templates/**, \
+  @${repo;org.apache.cxf:wss4j-ws-security-common;${wss4jVersion};EXACT}!/schemas/**, \
+  @${repo;org.apache.cxf:wss4j-ws-security-common;${wss4jVersion};EXACT}!/*xml, \
+  @${repo;org.bouncycastle:bcprov-jdk15on;1.61;EXACT}!/!META-INF/MANIFEST.MF|META-INF/maven/*, \
+  @${repo;org.apache.wss4j:wss4j-bindings;${wss4jVersion;EXACT}}!/!META-INF/MANIFEST.MF|META-INF/maven/*, \
+  @${repo;org.apache.cxf:wss4j-policy;${wss4jVersion};EXACT}!/!META-INF/MANIFEST.MF, \
+  @${repo;org.apache.cxf:wss4j-policy;${wss4jVersion};EXACT}!/templates/**, \
+  @${repo;org.apache.cxf:wss4j-policy;${wss4jVersion};EXACT}!/schemas/**, \
+  @${repo;org.apache.cxf:wss4j-policy;${wss4jVersion};EXACT}!/*xml, \
+  @${repo;org.apache.cxf:wss4j-ws-security-dom;${wss4jVersion};EXACT}!/!META-INF/MANIFEST.MF|META-INF/maven/*, \
+  @${repo;org.apache.cxf:wss4j-ws-security-policy-stax;${wss4jVersion};EXACT}!/!META-INF/**, \
+  @${repo;org.apache.cxf:wss4j-ws-security-stax;${wss4jVersion};EXACT}!/!META-INF/MANIFEST.MF|META-INF/maven/*
+
+-buildpath: \ 
+  org.apache.cxf:wss4j-ws-security-common;strategy=exact;version=${wss4jVersion}, \
+  org.apache.wss4j:wss4j-bindings;strategy=exact;version=${wss4jVersion}, \
+  org.apache.cxf:wss4j-policy;strategy=exact;version=${wss4jVersion}, \
+  org.apache.cxf:wss4j-ws-security-dom;strategy=exact;version=${wss4jVersion}, \
+  org.apache.cxf:wss4j-ws-security-policy-stax;strategy=exact;version=${wss4jVersion}, \
+  org.apache.cxf:wss4j-ws-security-stax;strategy=exact;version=${wss4jVersion}, \
+  org.apache.wss4j:wss4j-ws-security-web;strategy=exact;version=${wss4jVersion}, \
+  com.ibm.ws.prereq.wsdl4j.1.6.2;strategy=exact;version=latest, \
+  io.openliberty.org.apache.neethi.3.1.1;strategy=exact;version=3.1.1, \
+  com.ibm.websphere.javaee.servlet.4.0;strategy=exact;version=latest
+
