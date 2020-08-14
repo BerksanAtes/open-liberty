@@ -1,0 +1,79 @@
+#*******************************************************************************
+# Copyright (c) 2020 IBM Corporation and others.
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the Eclipse Public License v1.0
+# which accompanies this distribution, and is available at
+# http://www.eclipse.org/legal/epl-v10.html
+#
+# Contributors:
+#     IBM Corporation - initial API and implementation
+#*******************************************************************************
+-include= \
+  jar:${fileuri;${repo;org.opensaml:opensaml-core;3.4.5}}!/META-INF/MANIFEST.MF, \
+  jar:${fileuri;${repo;org.opensaml:opensaml-messaging-api;3.4.5}}!/META-INF/MANIFEST.MF, \
+  jar:${fileuri;${repo;org.opensaml:opensaml-messaging-impl;3.4.5}}!/META-INF/MANIFEST.MF, \
+  jar:${fileuri;${repo;org.opensaml:opensaml-profile-api;3.4.5}}!/META-INF/MANIFEST.MF, \
+  jar:${fileuri;${repo;org.opensaml:opensaml-saml-api;3.4.5}}!/META-INF/MANIFEST.MF, \
+  jar:${fileuri;${repo;org.opensaml:opensaml-saml-impl;3.4.5}}!/META-INF/MANIFEST.MF, \
+  jar:${fileuri;${repo;org.opensaml:opensaml-security-api;3.4.5}}!/META-INF/MANIFEST.MF, \
+  jar:${fileuri;${repo;org.opensaml:opensaml-security-impl;3.4.5}}!/META-INF/MANIFEST.MF, \
+  jar:${fileuri;${repo;org.opensaml:opensaml-soap-api;3.4.5}}!/META-INF/MANIFEST.MF, \
+  jar:${fileuri;${repo;org.opensaml:opensaml-soap-impl;3.4.5}}!/META-INF/MANIFEST.MF, \
+  jar:${fileuri;${repo;org.opensaml:opensaml-storage-api;3.4.5}}!/META-INF/MANIFEST.MF, \
+  jar:${fileuri;${repo;org.opensaml:opensaml-storage-impl;3.4.5}}!/META-INF/MANIFEST.MF, \
+  bnd.overrides
+
+instrument.ffdc: true
+
+opensamlVersion=3.4.5
+
+-includeresource: \
+  @${repo;org.opensaml:opensaml-core;3.4.5}!/!META-INF/MANIFEST.MF|META-INF/maven/*, \
+  @${repo;org.opensaml:opensaml-messaging-api;3.4.5}!/*xml|!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;org.opensaml:opensaml-messaging-impl;3.4.5}!/!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;org.opensaml:opensaml-profile-api;3.4.5}!/*xml|!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;org.opensaml:opensaml-profile-impl;3.4.5}!/!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;org.opensaml:opensaml-saml-api;3.4.5}!/!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;org.opensaml:opensaml-saml-impl;3.4.5}!/!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;org.opensaml:opensaml-security-api;3.4.5}!/!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;org.opensaml:opensaml-security-impl;3.4.5}!/*xml|!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;org.opensaml:opensaml-soap-api;3.4.5}!/*xml|!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;org.opensaml:opensaml-soap-impl;3.4.5}!/!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;org.opensaml:opensaml-storage-api;3.4.5}!/*xml|!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;org.opensaml:opensaml-storage-impl;3.4.5}!/!META-INF/MANIFEST.MF|META-INF/maven/*, \
+  @${repo;org.opensaml:opensaml-xacml-api;3.4.5}!/!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;org.opensaml:opensaml-xacml-impl;3.4.5}!/!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;org.opensaml:opensaml-xacml-saml-api;3.4.5}!/!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;org.opensaml:opensaml-xacml-saml-impl;3.4.5}!/!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;org.opensaml:opensaml-xmlsec-api;3.4.5}!/*xml|!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;org.opensaml:opensaml-xmlsec-impl;3.4.5}!/*xml|!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;com.google.guava:guava;27.0.1}!/!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;io.dropwizard.metrics:metrics-core;4.1.5}!/!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;net.shibboleth.utilities:java-support;7.5.1}!/!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;org.cryptacular:cryptacular;1.1.3}!/!META-INF/MANIFEST.MF|META-INF/maven/*|META-INF/services, \
+  @${repo;com.ibm.ws.org.apache.santuario.xmlsec.1.5.2}!/*xml, \
+
+
+-buildpath: \
+  org.opensaml:opensaml-core;version=3.4.5, \
+  org.opensaml:opensaml-messaging-api;version=3.4.5, \
+  org.opensaml:opensaml-messaging-impl;version=3.4.5, \
+  org.opensaml:opensaml-profile-api;version=3.4.5, \
+  org.opensaml:opensaml-saml-api;version=3.4.5,\
+  org.opensaml:opensaml-saml-impl;version=3.4.5,\
+  org.opensaml:opensaml-security-api;version=3.4.5,\
+  org.opensaml:opensaml-security-impl;version=3.4.5, \
+  org.opensaml:opensaml-soap-api;version=3.4.5,\
+  org.opensaml:opensaml-soap-impl;version=3.4.5,\
+  org.opensaml:opensaml-storage-api;version=3.4.5,\
+  org.opensaml:opensaml-storage-impl;version=3.4.5,\
+  org.opensaml:opensaml-xmlsec-api;version=3.4.5,\
+  org.opensaml:opensaml-xmlsec-impl;version=3.4.5,\
+  com.ibm.ws.com.google.guava;version=latest, \
+  com.ibm.ws.org.apache.httpcomponents;version=latest, \
+  net.shibboleth.utilities:java-support;version=7.5.1, \
+  io.openliberty.org.apache.santuario.xmlsec.2.2.0;version=latest, \
+  io.openliberty.org.joda.time.2.9.9;version=latest, \
+  org.bouncycastle:bcprov-jdk15on;version=1.6.1, \
+  org.cryptacular:cryptacular;version=1.1.3, \
+
