@@ -292,6 +292,7 @@ org.apache.cxf:cxf-rt-transports-http:3.3.0
 org.apache.cxf:cxf-rt-ws-addr:2.6.2
 org.apache.cxf:cxf-rt-ws-addr:3.3.0
 org.apache.cxf:cxf-rt-ws-addr:3.3.3
+org.apache.cxf:cxf-rt-ws-mex:3.3.7
 org.apache.cxf:cxf-rt-ws-policy:2.6.2
 org.apache.cxf:cxf-rt-ws-policy:3.3.0
 org.apache.cxf:cxf-rt-ws-policy:3.3.3
