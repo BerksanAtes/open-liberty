@@ -466,7 +466,7 @@ public class PolicyAnnotationListener implements FactoryBeanListener {
         InputSource src = null;
         try {
             src = resolver.resolve(uri, "classpath:");
-        } catch(ConnectException | SocketTimeoutException e1) {
+        } catch(Exception e1) {
             LOG.log(Level.WARNING, e1.getMessage());
         }  //Liberty change: end
 
