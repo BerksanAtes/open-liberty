@@ -34,6 +34,9 @@ import javax.xml.soap.SOAPMessage;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 
 import org.apache.cxf.binding.soap.SoapMessage;
 import org.apache.cxf.common.util.StringUtils;
@@ -278,7 +281,8 @@ public class SymmetricBindingHandler extends AbstractBindingBuilder {
                             secondRefList = ((WSSecDKEncrypt)encr).encryptForExternalRef(null, secondEncrParts);
                         } else {
                             //Encrypt, get hold of the ref list and add it
-                            secondRefList = ((WSSecEncrypt)encr).encryptForRef(null, secondEncrParts, symmetricKey);
+                            // secondRefList = ((WSSecEncrypt)encr).encryptForRef(null, secondEncrParts, symmetricKey); Liberty change: line is re removed
+                            secondRefList = encryptForRef((WSSecEncrypt)encr, secondEncrParts, symmetricKey); // Liberty change: line is added. symmetricKey is added with CXF 3.3.x
                         }
                         if (secondRefList != null) {
                             this.addDerivedKeyElement(secondRefList);
@@ -301,6 +305,11 @@ public class SymmetricBindingHandler extends AbstractBindingBuilder {
 
     private void doSignBeforeEncrypt() {
         AbstractTokenWrapper sigAbstractTokenWrapper = getSignatureToken();
+        // Liberty change: if block below is added
+        if (sigAbstractTokenWrapper == null) {
+            unassertPolicy(sigAbstractTokenWrapper, "No signature or protection token");  // Liberty change: policyNotAsserted is replaced by unassertPolicy method that replaced that method
+            return;
+        } // Liberty change: end
         assertTokenWrapper(sigAbstractTokenWrapper);
         AbstractToken sigToken = sigAbstractTokenWrapper.getToken();
         String sigTokId = null;
@@ -535,7 +544,8 @@ public class SymmetricBindingHandler extends AbstractBindingBuilder {
             encrDKTokenElem = dkEncr.getdktElement();
             addDerivedKeyElement(encrDKTokenElem);
 
-            Element refList = dkEncr.encryptForExternalRef(null, encrParts);
+            // Element refList = dkEncr.encryptForExternalRef(null, encrParts);  Liberty change: line is removed
+            Element refList = encryptForExternalRef(dkEncr, encrParts);
             List<Element> attachments = dkEncr.getAttachmentEncryptedDataElements();
             addAttachmentsForEncryption(atEnd, refList, attachments);
 
@@ -546,6 +556,26 @@ public class SymmetricBindingHandler extends AbstractBindingBuilder {
         }
         return null;
     }
+
+    // Liberty change: encryptForRef method below is added
+    private Element encryptForRef(WSSecEncrypt encr, List<WSEncryptionPart> encrParts, SecretKey symmetricKey) throws PrivilegedActionException {
+        return AccessController.doPrivileged(new PrivilegedExceptionAction<Element>() {
+            @Override
+            public Element run() throws WSSecurityException {
+                return encr.encryptForRef(null, encrParts, symmetricKey);
+            }
+        });
+    } // Liberty change: end
+
+    // Liberty change: encryptForExternalRef method below is added
+    private Element encryptForExternalRef(WSSecDKEncrypt dkEncr, List<WSEncryptionPart> encrParts) throws PrivilegedActionException {
+        return AccessController.doPrivileged(new PrivilegedExceptionAction<Element>() {
+            @Override
+            public Element run() throws WSSecurityException {
+                return dkEncr.encryptForExternalRef(null, encrParts);
+            }
+        });
+    } // Liberty change: end
 
     private WSSecEncrypt doEncryption(AbstractTokenWrapper recToken,
                                    SecurityToken encrTok,
@@ -640,7 +670,8 @@ public class SymmetricBindingHandler extends AbstractBindingBuilder {
                 encr.prependBSTElementToHeader();
             }
 
-            Element refList = encr.encryptForRef(null, encrParts, symmetricKey);
+            // Element refList = encr.encryptForRef(null, encrParts, symmetricKey); Liberty change: line is removed
+            Element refList = encryptForRef(encr, encrParts, symmetricKey); // Liberty change: line is added
             List<Element> attachments = encr.getAttachmentEncryptedDataElements();
             addAttachmentsForEncryption(atEnd, refList, attachments);
 
@@ -648,7 +679,9 @@ public class SymmetricBindingHandler extends AbstractBindingBuilder {
         } catch (InvalidCanonicalizerException | WSSecurityException e) {
             LOG.log(Level.FINE, e.getMessage(), e);
             unassertPolicy(recToken, e);
-        }
+        } catch (PrivilegedActionException pae) { // Liberty change: catch block is added
+            unassertPolicy(recToken, pae); // Liberty change: policyNotAsserted is replaced by unassertPolicy method that replaced that method
+        } // Liberty change: end
         return null;
     }
 

@@ -78,6 +78,7 @@ import org.apache.cxf.ws.security.SecurityConstants;
 import org.apache.cxf.ws.security.policy.PolicyUtils;
 import org.apache.cxf.ws.security.tokenstore.SecurityToken;
 import org.apache.cxf.ws.security.tokenstore.TokenStore;
+import org.apache.cxf.ws.security.tokenstore.TokenStoreFactory;
 import org.apache.cxf.ws.security.tokenstore.TokenStoreException;
 import org.apache.cxf.ws.security.tokenstore.TokenStoreUtils;
 import org.apache.cxf.ws.security.wss4j.AttachmentCallbackHandler;
@@ -179,18 +180,18 @@ public abstract class AbstractBindingBuilder extends AbstractCommonBindingHandle
 
     protected Set<Integer> signatures = new HashSet<>();
 
-    protected Element bottomUpElement;
-    protected Element topDownElement;
-    protected Element bstElement;
-    protected Element lastEncryptedKeyElement;
+    Element bottomUpElement;          // Liberty change: protected is removed
+    Element topDownElement;           // Liberty change: protected is removed
+    Element bstElement;               // Liberty change: protected is removed
+    Element lastEncryptedKeyElement;  // Liberty change: protected is removed
 
     protected final CallbackLookup callbackLookup;
     protected boolean storeBytesInAttachment;
     protected WSDocInfo wsDocInfo;
     private boolean expandXopInclude;
 
-    private Element lastSupportingTokenElement;
-    private Element lastDerivedKeyElement;
+    Element lastSupportingTokenElement; // Liberty change: private is removed
+    Element lastDerivedKeyElement;      // Liberty change: private is removed
 
     private List<AbstractSecurityAssertion> suppTokenParts = new ArrayList<>();
     private List<SupportingToken> endSuppTokList;
@@ -240,11 +241,17 @@ public abstract class AbstractBindingBuilder extends AbstractCommonBindingHandle
         }
     }
 
-    protected void insertAfter(Element child, Element sib) {
+    private void insertAfter(Element child, Element sib) { // Liberty change:protected is replaced by private
         child = (Element)DOMUtils.getDomElement(child);
+        // Liberty change: 2 lines below are added
+        sib = (Element)DOMUtils.getDomElement(sib);
+        LOG.info("insertAfter:  child = " + child + " sib = " + topDownElement);// Liberty change: end
         if (sib.getNextSibling() == null) {
+            LOG.info("insertAfter:  secHeader.getSecurityHeader() = " + secHeader.getSecurityHeaderElement());   // Liberty change: line is added
             secHeader.getSecurityHeaderElement().appendChild(child);
         } else {
+            LOG.info("insertAfter: secHeader.getSecurityHeader() = " + secHeader.getSecurityHeaderElement());    // Liberty change: line is added
+            LOG.info("insertAfter: child = " + child + " sib.getNextSibling() = " + sib.getNextSibling());// Liberty change: line is added
             secHeader.getSecurityHeaderElement().insertBefore(child, sib.getNextSibling());
         }
     }
@@ -257,10 +264,12 @@ public abstract class AbstractBindingBuilder extends AbstractCommonBindingHandle
         } else if (topDownElement != null) {
             insertAfter(el, topDownElement);
         } else if (secHeader.getSecurityHeaderElement().getFirstChild() != null) {
+            el = (Element)DOMUtils.getDomElement(el); // Liberty change: line is added
             secHeader.getSecurityHeaderElement().insertBefore(
                 el, secHeader.getSecurityHeaderElement().getFirstChild()
             );
         } else {
+            el = (Element)DOMUtils.getDomElement(el); // Liberty change: line is added
             secHeader.getSecurityHeaderElement().appendChild(el);
         }
         lastEncryptedKeyElement = el;
@@ -270,14 +279,18 @@ public abstract class AbstractBindingBuilder extends AbstractCommonBindingHandle
         if (lastEncryptedKeyElement != null) {
             insertAfter(el, lastEncryptedKeyElement);
         } else if (lastDerivedKeyElement != null) {
+            el = (Element)DOMUtils.getDomElement(el); // Liberty change: line is added
             secHeader.getSecurityHeaderElement().insertBefore(el, lastDerivedKeyElement);
         } else if (topDownElement != null) {
+            LOG.info("element = " + el + " topDownElement = " + topDownElement);  // Liberty change: line is added
             insertAfter(el, topDownElement);
         } else if (secHeader.getSecurityHeaderElement().getFirstChild() != null) {
+            el = (Element)DOMUtils.getDomElement(el); // Liberty change: line is added
             secHeader.getSecurityHeaderElement().insertBefore(
                 el, secHeader.getSecurityHeaderElement().getFirstChild()
             );
         } else {
+            el = (Element)DOMUtils.getDomElement(el); // Liberty change: line is added
             secHeader.getSecurityHeaderElement().appendChild(el);
         }
         lastEncryptedKeyElement = el;
@@ -290,18 +303,22 @@ public abstract class AbstractBindingBuilder extends AbstractCommonBindingHandle
         } else if (lastDerivedKeyElement != null) {
             insertAfter(el, lastDerivedKeyElement);
         } else if (lastEncryptedKeyElement != null) {
+            LOG.info("element = " + el + " topDownElement = " + topDownElement);  // Liberty change: line is added
             insertAfter(el, lastEncryptedKeyElement);
         } else if (topDownElement != null) {
             insertAfter(el, topDownElement);
         } else if (bottomUpElement != null) {
+            el = (Element)DOMUtils.getDomElement(el); // Liberty change: line is added
             secHeader.getSecurityHeaderElement().insertBefore(el, bottomUpElement);
         } else {
+            el = (Element)DOMUtils.getDomElement(el); // Liberty change: line is added
             secHeader.getSecurityHeaderElement().appendChild(el);
         }
         lastSupportingTokenElement = el;
     }
 
     protected void insertBeforeBottomUp(Element el) {
+        el = (Element)DOMUtils.getDomElement(el); // Liberty change: line is added
         if (bottomUpElement == null) {
             secHeader.getSecurityHeaderElement().appendChild(el);
         } else {
@@ -311,6 +328,7 @@ public abstract class AbstractBindingBuilder extends AbstractCommonBindingHandle
     }
 
     protected void addTopDownElement(Element el) {
+        el = (Element)DOMUtils.getDomElement(el); // Liberty change: line is added
         if (topDownElement == null) {
             if (secHeader.getSecurityHeaderElement().getFirstChild() == null) {
                 secHeader.getSecurityHeaderElement().appendChild(el);
@@ -1067,7 +1085,8 @@ public abstract class AbstractBindingBuilder extends AbstractCommonBindingHandle
         String id;
 
         //first try to get the Id attr
-        Attr idAttr = element.getAttributeNodeNS(null, "Id");
+        // Attr idAttr = element.getAttributeNodeNS(null, "Id");     Liberty change: line is removed
+        Attr idAttr = element.getAttributeNode("Id");                // Liberty change: line is added
         if (idAttr == null) {
             //then try the wsu:Id value
             idAttr = element.getAttributeNodeNS(PolicyConstants.WSU_NAMESPACE_URI, "Id");
@@ -1077,7 +1096,8 @@ public abstract class AbstractBindingBuilder extends AbstractCommonBindingHandle
             id = idAttr.getValue();
         } else {
             //Add an id
-            id = wssConfig.getIdAllocator().createId("_", element);
+            // id = wssConfig.getIdAllocator().createId("_", element);   Liberty change: line is removed
+            id = "Id-" + element.hashCode();                             // Liberty change: line is added
             String pfx = null;
             try {
                 pfx = element.lookupPrefix(PolicyConstants.WSU_NAMESPACE_URI);
@@ -1296,11 +1316,11 @@ public abstract class AbstractBindingBuilder extends AbstractCommonBindingHandle
         result.addAll(this.getParts(sign, includeBody, parts, found));
 
         // Handle sign/enc elements
-        result.addAll(this.getElements("Header", xpaths, found, sign));
+        result.addAll(this.getElements("Header", xpaths, found)); // Liberty change: sign is removed as last parameter
 
         if (!sign) {
             // Handle content encrypted elements
-            result.addAll(this.getElements("Content", contentXpaths, found, sign));
+            result.addAll(this.getElements("Content", contentXpaths, found)); // Liberty change: sign is removed as last parameter
         }
 
         return result;
@@ -1414,8 +1434,7 @@ public abstract class AbstractBindingBuilder extends AbstractCommonBindingHandle
      */
     protected List<WSEncryptionPart> getElements(String encryptionModifier,
             List<org.apache.wss4j.policy.model.XPath> xpaths,
-            List<Element> found,
-            boolean forceId) throws SOAPException {
+            List<Element> found) throws SOAPException {  // Liberty change: is removed from parameters
 
         List<WSEncryptionPart> result = new ArrayList<>();
 
@@ -1471,7 +1490,7 @@ public abstract class AbstractBindingBuilder extends AbstractCommonBindingHandle
                                 part.setId(secRef.getID());
                                 part.setElement(clone);
                             } else {
-                                String id = setIdOnElement(el, forceId);
+                                String id = setIdOnElement(el); // Liberty change: forceId is removed from parameters
                                 part = new WSEncryptionPart(id, encryptionModifier);
                                 part.setElement(el);
                             }
@@ -1487,13 +1506,10 @@ public abstract class AbstractBindingBuilder extends AbstractCommonBindingHandle
         return result;
     }
 
-    private String setIdOnElement(Element element, boolean forceId) {
-        if (forceId) {
-            return this.addWsuIdToElement(element);
-        }
-
-        //not forcing an ID on this.  Use one if there is one
-        //there already, but don't force one
+    private String setIdOnElement(Element element) { // Liberty change: boolean forceId is removed from parameters
+        // Liberty change: forcing id all the time
+        return this.addWsuIdToElement(element);
+/*		Liberty change: lines below are removed		
         Attr idAttr = element.getAttributeNodeNS(null, "Id");
         if (idAttr == null) {
             //then try the wsu:Id value
@@ -1503,7 +1519,7 @@ public abstract class AbstractBindingBuilder extends AbstractCommonBindingHandle
             return idAttr.getValue();
         }
 
-        return null;
+        return null; Liberty change:end */
     }
 
     protected WSSecEncryptedKey getEncryptedKeyBuilder(AbstractToken token,

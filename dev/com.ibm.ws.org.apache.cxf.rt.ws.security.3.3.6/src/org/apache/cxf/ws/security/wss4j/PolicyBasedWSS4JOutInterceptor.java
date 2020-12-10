@@ -123,11 +123,15 @@ public class PolicyBasedWSS4JOutInterceptor extends AbstractPhaseInterceptor<Soa
             }
             SOAPMessage saaj = message.getContent(SOAPMessage.class);
 
+/*          Liberty change: 5 lines below are removed
             boolean mustUnderstand =
                 MessageUtils.getContextualBoolean(
                     message, SecurityConstants.MUST_UNDERSTAND, true
                 );
-            String actor = (String)message.getContextualProperty(SecurityConstants.ACTOR);
+            String actor = (String)message.getContextualProperty(SecurityConstants.ACTOR);  Liberty change: end */
+            // Liberty change: 2 lines below are added
+            boolean mustUnderstand = true;
+            String actor = null;  // Liberty change: end
 
             // extract Assertion information
             AbstractBinding binding = PolicyUtils.getSecurityBinding(aim);

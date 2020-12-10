@@ -19,6 +19,7 @@
 package org.apache.cxf.ws.security.wss4j;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.security.Provider;
 import java.security.cert.Certificate;
 import java.util.ArrayList;
@@ -42,6 +43,9 @@ import javax.xml.transform.dom.DOMSource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 
 import org.apache.cxf.attachment.AttachmentUtil;
 import org.apache.cxf.binding.soap.SoapFault;
@@ -67,6 +71,7 @@ import org.apache.cxf.ws.security.SecurityConstants;
 import org.apache.cxf.ws.security.tokenstore.TokenStore;
 import org.apache.cxf.ws.security.tokenstore.TokenStoreException;
 import org.apache.cxf.ws.security.tokenstore.TokenStoreUtils;
+import org.apache.cxf.service.model.EndpointInfo;
 import org.apache.wss4j.common.ConfigurationConstants;
 import org.apache.wss4j.common.cache.ReplayCache;
 import org.apache.wss4j.common.crypto.Crypto;
@@ -101,10 +106,16 @@ public class WSS4JInInterceptor extends AbstractWSS4JInterceptor {
 
     public static final String PROCESSOR_MAP = "wss4j.processor.map";
     public static final String VALIDATOR_MAP = "wss4j.validator.map";
+    public static final String SAML_ONE_TIME_USE_CACHE_INSTANCE = "ws-security.saml.cache.instance";// Liberty change: line is added
+    public static final String ENABLE_SAML_ONE_TIME_USE_CACHE = "ws-security.enable.saml.cache";    // Liberty change: line is added
 
     public static final String SECURITY_PROCESSED = WSS4JInInterceptor.class.getName() + ".DONE";
 
     private static final Logger LOG = LogUtils.getL7dLogger(WSS4JInInterceptor.class);
+    private static final Logger TIME_LOG = LogUtils.getL7dLogger(WSS4JInInterceptor.class,  // Liberty change: line is added
+                                                             null,
+                                                             WSS4JInInterceptor.class.getName()
+                                                                             + "-Time");
     private boolean ignoreActions;
 
     /**
@@ -203,6 +214,7 @@ public class WSS4JInInterceptor extends AbstractWSS4JInterceptor {
         if (msg.containsKey(SECURITY_PROCESSED) || isGET(msg) || msg.getExchange() == null) {
             return;
         }
+        msg.put(SECURITY_PROCESSED, Boolean.TRUE);  // Liberty change: line is added
 
         Object provider = msg.getExchange().get(Provider.class);
         final boolean useCustomProvider = provider != null && ThreadLocalSecurityProvider.isInstalled();
@@ -246,6 +258,7 @@ public class WSS4JInInterceptor extends AbstractWSS4JInterceptor {
         SOAPMessage doc = getSOAPMessage(msg);
 
         boolean doDebug = LOG.isLoggable(Level.FINE);
+        boolean doTimeLog = TIME_LOG.isLoggable(Level.FINE);  // Liberty change: line is added
 
         SoapVersion version = msg.getVersion();
         try {
@@ -258,6 +271,14 @@ public class WSS4JInInterceptor extends AbstractWSS4JInterceptor {
             LOG.fine("WSS4JInInterceptor: enter handleMessage()");
         }
 
+        // Liberty change: 7 lines below are added
+        long t0 = 0;
+        long t1 = 0;
+        long t2 = 0;
+        long t3 = 0;
+        if (doTimeLog) {
+            t0 = System.currentTimeMillis();
+        } // Liberty change: end
         /*
          * The overall try, just to have a finally at the end to perform some
          * housekeeping.
@@ -266,7 +287,7 @@ public class WSS4JInInterceptor extends AbstractWSS4JInterceptor {
             reqData.setMsgContext(msg);
             reqData.setAttachmentCallbackHandler(new AttachmentCallbackHandler(msg));
 
-            setAlgorithmSuites(msg, reqData);
+            // setAlgorithmSuites(msg, reqData);  Liberty change: line is removed
 
             reqData.setCallbackHandler(getCallback(reqData, utWithCallbacks));
 
@@ -275,9 +296,9 @@ public class WSS4JInInterceptor extends AbstractWSS4JInterceptor {
             List<Integer> actions = WSSecurityUtil.decodeAction(action);
 
             String actor = (String)getOption(ConfigurationConstants.ACTOR);
-            if (actor == null) {
+/*          if (actor == null) {  Liberty change: if block is removed
                 actor = (String)msg.getContextualProperty(SecurityConstants.ACTOR);
-            }
+            } Liberty change: end */
             reqData.setActor(actor);
 
             // Configure replay caching
@@ -311,6 +332,9 @@ public class WSS4JInInterceptor extends AbstractWSS4JInterceptor {
                                        msg));
             reqData.setEnableRevocation(enableRevocation);
 
+            if (doTimeLog) {  // Liberty change: if block is added
+                t1 = System.currentTimeMillis();
+            } // Liberty change: end
             Element soapBody = SAAJUtils.getBody(doc);
             if (soapBody != null) {
                 engine.setCallbackLookup(new CXFCallbackLookup(soapBody.getOwnerDocument(), soapBody));
@@ -329,6 +353,9 @@ public class WSS4JInInterceptor extends AbstractWSS4JInterceptor {
             Element body = SAAJUtils.getBody(doc);
             header = (Element)DOMUtils.getDomElement(header);
             body = (Element)DOMUtils.getDomElement(body);
+            if (doTimeLog) {  // Liberty change: if block is added
+                t2 = System.currentTimeMillis();
+            } // Liberty change: end
             if (!(wsResult.getResults() == null || wsResult.getResults().isEmpty())) {
                 // security header found
                 if (reqData.isEnableSignatureConfirmation()) {
@@ -373,6 +400,13 @@ public class WSS4JInInterceptor extends AbstractWSS4JInterceptor {
             }
             SAAJInInterceptor.replaceHeaders(doc, msg);
 
+            if (doTimeLog) {  // Liberty change: if block is added
+                t3 = System.currentTimeMillis();
+                TIME_LOG.fine("Receive request: total= " + (t3 - t0)
+                              + " request preparation= " + (t1 - t0)
+                              + " request processing= " + (t2 - t1)
+                              + " header, cert verify, timestamp= " + (t3 - t2) + "\n");
+            }  // Liberty change: end
             if (doDebug) {
                 LOG.fine("WSS4JInInterceptor: exit handleMessage()");
             }
@@ -385,7 +419,7 @@ public class WSS4JInInterceptor extends AbstractWSS4JInterceptor {
         } catch (SOAPException e) {
             throw new SoapFault(new Message("SAAJ_EX", LOG), e, version.getSender());
         } finally {
-            reqData = null;
+            // reqData.clear(); Liberty change: this line is removed from new CXF
         }
     }
     private void importNewDomToSAAJ(SOAPMessage doc, Element elem,
@@ -557,9 +591,10 @@ public class WSS4JInInterceptor extends AbstractWSS4JInterceptor {
      * Set a WSS4J AlgorithmSuite object on the RequestData context, to restrict the
      * algorithms that are allowed for encryption, signature, etc.
      */
+    /* Liberty change: setAlgorithmSuites method is removed
     protected void setAlgorithmSuites(SoapMessage message, RequestData data) throws WSSecurityException {
         super.decodeAlgorithmSuite(data);
-    }
+    } */
 
     protected void doResults(
         SoapMessage msg,

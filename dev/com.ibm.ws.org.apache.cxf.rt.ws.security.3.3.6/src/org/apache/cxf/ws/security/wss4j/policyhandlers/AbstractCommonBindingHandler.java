@@ -457,7 +457,11 @@ public abstract class AbstractCommonBindingHandler {
                 st = TokenStoreUtils.getTokenStore(message).getToken(id);
             }
         }
+        if (st != null) {           // Liberty change: line is added
+          TokenStoreUtils.getTokenStore(message).add(st);  // Liberty change: line is added
         return st;
+        }                           // Liberty change: line is added
+        return null;                // Liberty change: line is added
     }
 
     protected void assertPolicy(QName name) {

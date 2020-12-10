@@ -36,6 +36,9 @@ import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
 import org.w3c.dom.Element;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 
 import org.apache.cxf.binding.soap.SoapMessage;
 import org.apache.cxf.common.logging.LogUtils;
@@ -153,6 +156,7 @@ public class AsymmetricBindingHandler extends AbstractBindingBuilder {
                         return;
                     } else if (isTokenRequired(initiatorToken.getIncludeTokenType())) {
                         Element el = secToken.getToken();
+                        el = (Element) DOMUtils.getDomElement(el);  // Liberty change: line is added
                         this.addEncryptedKeyElement(cloneElement(el));
                         attached = true;
                     }
@@ -301,6 +305,7 @@ public class AsymmetricBindingHandler extends AbstractBindingBuilder {
                     return;
                 } else if (isTokenRequired(initiatorToken.getIncludeTokenType())) {
                     Element el = secToken.getToken();
+                    el = (Element) DOMUtils.getDomElement(el);  // Liberty change: line is added
                     this.addEncryptedKeyElement(cloneElement(el));
                     attached = true;
                 }
@@ -376,8 +381,8 @@ public class AsymmetricBindingHandler extends AbstractBindingBuilder {
         }
 
         try {
-            if (!sigParts.isEmpty()) {
-                if (initiatorWrapper != null && isRequestor()) {
+            // if (!sigParts.isEmpty()) { Liberty change: line is removed
+            if (!sigParts.isEmpty() && initiatorWrapper != null && isRequestor()) { // Liberty change: line is added
                     doSignature(initiatorWrapper, sigParts, attached);
                 } else if (!isRequestor()) {
                     AbstractTokenWrapper recipientSignatureToken =
@@ -391,7 +396,7 @@ public class AsymmetricBindingHandler extends AbstractBindingBuilder {
                         doSignature(recipientSignatureToken, sigParts, attached);
                     }
                 }
-            }
+            // }  Liberty change: line is removed
         } catch (WSSecurityException | SOAPException | TokenStoreException ex) {
             LOG.log(Level.FINE, ex.getMessage(), ex);
             throw new Fault(ex);
@@ -401,20 +406,51 @@ public class AsymmetricBindingHandler extends AbstractBindingBuilder {
             doEndorse();
         }
 
+/*      Liberty change: if block below is removed
         if (encrBase != null) {
             encryptTokensInSecurityHeader(encryptionToken, encrBase, symmetricKey);
             encrBase.clean();
+        }  Liberty change: end */
+
+        // Liberty change: 4 lines below are added
+        checkForSignatureProtection(encryptionToken, encrBase, symmetricKey);
+        if (isRequestor()) {
+            checkForEncryptedTokens(encryptionToken, encrBase, symmetricKey);
         }
     }
 
 
-    private void encryptTokensInSecurityHeader(AbstractToken encryptionToken,
+    private void checkForEncryptedTokens(AbstractToken encryptionToken, // Liberty change:  encryptTokensInSecurityHeader method name is replaced by checkForEncryptedTokens
                                                WSSecBase encrBase,
                                                SecretKey symmetricKey) {
+        if (!abinding.isEncryptSignature()) {  // Liberty change: line is added
         List<WSEncryptionPart> secondEncrParts = new ArrayList<>();
 
+          secondEncrParts.addAll(encryptedTokensList);
+          if (encryptionToken.getDerivedKeys() == DerivedKeys.RequireDerivedKeys && !secondEncrParts.isEmpty()
+              && encrBase instanceof WSSecDKEncrypt) {
+              try {
+                  Element secondRefList = ((WSSecDKEncrypt) encrBase).encryptForExternalRef(null, secondEncrParts);
+                  ((WSSecDKEncrypt) encrBase).addExternalRefElement(secondRefList);
+              } catch (WSSecurityException ex) {
+                  throw new Fault(ex);
+              }
+          } else if (!secondEncrParts.isEmpty() && encrBase instanceof WSSecEncrypt) {
+              try {
+                  Element secondRefList = saaj.getSOAPPart().createElementNS(WSConstants.ENC_NS,
+                                                                             WSConstants.ENC_PREFIX + ":ReferenceList");
+                  this.insertBeforeBottomUp(secondRefList);
+                  encryptForRef((WSSecEncrypt) encrBase, secondRefList, secondEncrParts, symmetricKey);
+              } catch (PrivilegedActionException pae) {
+                  throw new Fault(pae.getException());
+              }
+          }
+        } // Liberty change: end
+    }
+    private void checkForSignatureProtection(AbstractToken encryptionToken, WSSecBase encrBase, SecretKey symmetricKey) { // Liberty change: line is added
         // Check for signature protection
         if (abinding.isEncryptSignature()) {
+            List<WSEncryptionPart> secondEncrParts = new ArrayList<WSEncryptionPart>(); // Liberty change: line is added
             assertPolicy(
                 new QName(abinding.getName().getNamespaceURI(), SPConstants.ENCRYPT_SIGNATURE));
 
@@ -428,20 +464,20 @@ public class AsymmetricBindingHandler extends AbstractBindingBuilder {
             if (sigConfList != null && !sigConfList.isEmpty()) {
                 secondEncrParts.addAll(sigConfList);
             }
-        }
+            // }  Liberty change: line is removed
 
-        // Add any SupportingTokens that need to be encrypted
-        if (isRequestor()) {
-            secondEncrParts.addAll(encryptedTokensList);
-        }
-
-        if (secondEncrParts.isEmpty()) {
-            return;
-        }
+            // Add any SupportingTokens that need to be encrypted
+            if (isRequestor()) {
+                secondEncrParts.addAll(encryptedTokensList);
+            }
+/*          Liberty change: if block below is removed
+            if (secondEncrParts.isEmpty()) {
+                return;
+            } Liberty change: end */
 
         // Perform encryption
         if (encryptionToken.getDerivedKeys() == DerivedKeys.RequireDerivedKeys
-            && encrBase instanceof WSSecDKEncrypt) {
+                && encrBase instanceof WSSecDKEncrypt && !secondEncrParts.isEmpty()) { // Liberty change: && !secondEncrParts.isEmpty() is added
             try {
                 Element secondRefList =
                     ((WSSecDKEncrypt)encrBase).encryptForExternalRef(null, secondEncrParts);
@@ -453,22 +489,27 @@ public class AsymmetricBindingHandler extends AbstractBindingBuilder {
                 LOG.log(Level.FINE, ex.getMessage(), ex);
                 throw new Fault(ex);
             }
-        } else if (encrBase instanceof WSSecEncrypt) {
-            try {
-                // Encrypt, get hold of the ref list and add it
-                Element secondRefList = saaj.getSOAPPart()
-                    .createElementNS(WSS4JConstants.ENC_NS,
-                                     WSS4JConstants.ENC_PREFIX + ":ReferenceList");
-                if (lastEncryptedKeyElement != null) {
-                    insertAfter(secondRefList, lastEncryptedKeyElement);
-                } else {
-                    this.insertBeforeBottomUp(secondRefList);
-                }
-                ((WSSecEncrypt)encrBase).encryptForRef(secondRefList, secondEncrParts, symmetricKey);
-
-            } catch (WSSecurityException ex) {
-                LOG.log(Level.FINE, ex.getMessage(), ex);
-                throw new Fault(ex);
+            } else if (!secondEncrParts.isEmpty() && encrBase instanceof WSSecEncrypt) { // Liberty change: !secondEncrParts.isEmpty() && is added
+                try {
+                    // Encrypt, get hold of the ref list and add it
+                    Element secondRefList = saaj.getSOAPPart()
+                        .createElementNS(WSS4JConstants.ENC_NS,
+                                         WSS4JConstants.ENC_PREFIX + ":ReferenceList");
+/*                  Liberty change: 3 lines below are removed
+                    if (lastEncryptedKeyElement != null) {
+                        insertAfter(secondRefList, lastEncryptedKeyElement);
+                    } else {  Liberty change: end */
+                        this.insertBeforeBottomUp(secondRefList);
+                    // }  Liberty change: line is removed
+                    // ((WSSecEncrypt)encrBase).encryptForRef(secondRefList, secondEncrParts, symmetricKey); Liberty change: line is removed
+                    encryptForRef((WSSecEncrypt) encrBase, secondRefList, secondEncrParts, symmetricKey);
+                }  catch (PrivilegedActionException pae) {  // Liberty change: catch block is added
+                    throw new Fault(pae.getException());
+                } // Liberty change: end
+                /* catch (WSSecurityException ex) { Liberty change: catch block is removed
+                    LOG.log(Level.FINE, ex.getMessage(), ex);
+                    throw new Fault(ex);
+                } Liberty change: end */
             }
         }
     }
@@ -549,7 +590,8 @@ public class AsymmetricBindingHandler extends AbstractBindingBuilder {
             List<Element> attachments = encr.getAttachmentEncryptedDataElements();
             //Encrypt, get hold of the ref list and add it
             if (externalRef) {
-                Element refList = encr.encryptForRef(null, encrParts, symmetricKey);
+                // Element refList = encr.encryptForRef(null, encrParts, symmetricKey); Liberty change: line is removed
+                Element refList = encryptForRef(encr, null, encrParts, symmetricKey);
                 if (refList != null) {
                     insertBeforeBottomUp(refList);
                 }
@@ -562,7 +604,8 @@ public class AsymmetricBindingHandler extends AbstractBindingBuilder {
                     this.addEncryptedKeyElement(encryptedKeyElement);
                 }
             } else {
-                Element refList = encr.encryptForRef(null, encrParts, symmetricKey);
+                // Element refList = encr.encryptForRef(null, encrParts, symmetricKey); Liberty change: line is removed
+                Element refList = encryptForRef(encr, null, encrParts, symmetricKey);
                 if (refList != null || (attachments != null && !attachments.isEmpty())) {
                     this.addEncryptedKeyElement(encryptedKeyElement);
                 }
@@ -586,10 +629,22 @@ public class AsymmetricBindingHandler extends AbstractBindingBuilder {
             return encr;
         } catch (InvalidCanonicalizerException | WSSecurityException e) {
             LOG.log(Level.FINE, e.getMessage(), e);
-            unassertPolicy(recToken, e);
-        }
+            unassertPolicy(recToken, e.getMessage());// Liberty change: e replaced by e.getMessage()
+        }catch (PrivilegedActionException pae) {  // Liberty change: catch block is added
+            unassertPolicy(recToken, pae.getException().getMessage());
+        } // Liberty change: end
         return null;
     }
+
+    // Liberty change: encryptForRef method below is added
+    private Element encryptForRef(WSSecEncrypt encr, Element secondRefList, List<WSEncryptionPart> encrParts, SecretKey symmetricKey) throws PrivilegedActionException {
+        return AccessController.doPrivileged(new PrivilegedExceptionAction<Element>() {
+            @Override
+            public Element run() throws WSSecurityException {
+                return encr.encryptForRef(secondRefList, encrParts, symmetricKey);
+            }
+        });
+    } // Liberty change: end
 
     private WSSecBase doEncryptionDerived(AbstractTokenWrapper recToken,
                                      List<WSEncryptionPart> encrParts) {
