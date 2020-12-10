@@ -90,4 +90,4 @@ Import-Package: \
   org.xml.sax
 
 Export-Package: \
-  org.apache.cxf.binding.soap.*;version=${cxfVersion}
+  org.apache.cxf.binding.soap.*;version=${cxfVersion};-split-package:=merge-last
