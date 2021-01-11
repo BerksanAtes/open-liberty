@@ -130,6 +130,8 @@ Import-Package: \
   javax.xml.bind.annotation.adapters;version=!, \
   javax.xml.bind.attachment;version=!, \
   !javax.xml.ws.*, \
+  !org.apache.cxf.wsdl,\
+  !org.apache.cxf.wsdl11,\
   *
 
 DynamicImport-Package: \

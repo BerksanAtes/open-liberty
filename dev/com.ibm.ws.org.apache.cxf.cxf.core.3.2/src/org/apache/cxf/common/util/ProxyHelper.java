@@ -91,7 +91,7 @@ public class ProxyHelper {
     private String getSortedNameFromInterfaceArray(Class<?>[] interfaces) {
         SortedArraySet<String> arraySet = new SortedArraySet<String>();
         for (Class<?> currentInterface : interfaces) {
-            arraySet.add(currentInterface.getName() + ClassLoaderUtils.getClassLoaderName(currentInterface));
+            arraySet.add(currentInterface.getName() + ClassLoaderUtils.getClassLoaderName(currentInterface)); //Liberty change
         }
         return arraySet.toString();
     }

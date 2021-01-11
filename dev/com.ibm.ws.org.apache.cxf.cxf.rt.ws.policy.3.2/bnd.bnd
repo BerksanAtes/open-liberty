@@ -20,6 +20,9 @@ cxfVersion=3.4.1
 -buildpath: org.apache.cxf:cxf-rt-ws-policy;strategy=exact;version=${cxfVersion},\
   com.ibm.websphere.org.osgi.core,\
   com.ibm.ws.org.osgi.annotation.versioning;version=latest,\
-  com.ibm.ws.logging.core
+  com.ibm.ws.logging.core,\
+  com.ibm.ws.org.apache.neethi.3.1.1;version=latest,\
+  com.ibm.ws.org.apache.cxf.cxf.core.3.2;version=latest,\
+  com.ibm.websphere.javaee.wsdl4j.1.2;version=latest
 
 jakartaeeMe: true

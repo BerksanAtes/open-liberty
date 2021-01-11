@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -40,6 +41,7 @@ import javax.xml.namespace.QName;
 
 import org.apache.cxf.Bus;
 import org.apache.cxf.attachment.AttachmentDataSource;
+import org.apache.cxf.common.logging.LogUtils;
 import org.apache.cxf.common.util.Base64Exception;
 import org.apache.cxf.common.util.Base64Utility;
 import org.apache.cxf.common.util.PropertyUtils;
@@ -80,9 +82,9 @@ import org.apache.cxf.ws.addressing.EndpointReferenceUtils;
 
 import com.ibm.websphere.ras.Tr;
 import com.ibm.websphere.ras.TraceComponent;
-import com.ibm.ws.cxf.exceptions.InvalidCharsetException;
 import com.ibm.ws.ffdc.annotation.FFDCIgnore;
 
+import com.ibm.websphere.ras.annotation.Trivial;
 /**
  * Common base for HTTP Destination implementations.
  */
@@ -111,6 +113,7 @@ public abstract class AbstractHTTPDestination
     private static final String DECODE_BASIC_AUTH_WITH_ISO8859 = "decode.basicauth.with.iso8859";
     //private static final Logger LOG = LogUtils.getL7dLogger(AbstractHTTPDestination.class);
     private static final TraceComponent tc = Tr.register(AbstractHTTPDestination.class);
+    private static final Logger LOG = LogUtils.getL7dLogger(AbstractHTTPDestination.class);	// Liberty change: line is added
 
     protected final Bus bus;
     protected DestinationRegistry registry;
@@ -158,7 +161,7 @@ public abstract class AbstractHTTPDestination
         return bus;
     }
 
-    private AuthorizationPolicy getAuthorizationPolicyFromMessage(String credentials, SecurityContext sc) {
+    private AuthorizationPolicy getAuthorizationPolicyFromMessage(String credentials) {	// Liberty change: SecurityContext sc parameter is removed
         if (credentials == null || StringUtils.isEmpty(credentials.trim())) {
             return null;
         }
@@ -176,7 +179,7 @@ public abstract class AbstractHTTPDestination
 
                 String authDecoded = decodeBasicAuthWithIso8859
                     ? new String(authBytes, StandardCharsets.ISO_8859_1) : new String(authBytes);
-
+/* 				Liberty change: lines below are removed
                 int idx = authDecoded.indexOf(':');
                 String username = null;
                 String password = null;
@@ -187,24 +190,33 @@ public abstract class AbstractHTTPDestination
                     if (idx < (authDecoded.length() - 1)) {
                         password = authDecoded.substring(idx + 1);
                     }
-                }
-
-                AuthorizationPolicy policy = sc.getUserPrincipal() == null
-                    ? new AuthorizationPolicy() : new PrincipalAuthorizationPolicy(sc);
+                } Liberty change: end */
+				// Liberty change: lines below are added
+				String authInfo[] = authDecoded.split(":");
+                String username = (authInfo.length > 0) ? authInfo[0] : "";
+				// Below line for systems that blank out password after authentication;
+				// see CXF-1495 for more info
+				String password = (authInfo.length > 1) ? authInfo[1] : ""; 
+				// Liberty change: end 
+				
+				// Liberty change:line below is removed
+                //AuthorizationPolicy policy = sc.getUserPrincipal() == null ? new AuthorizationPolicy() : new PrincipalAuthorizationPolicy(sc);
+				AuthorizationPolicy policy = new AuthorizationPolicy();	// Liberty change:line is added
                 policy.setUserName(username);
                 policy.setPassword(password);
-                policy.setAuthorizationType(authType);
+                //policy.setAuthorizationType(authType); // Liberty change:line is removed
                 return policy;
             } catch (Base64Exception ex) {
                 // Invalid authentication => treat as not authenticated or use the Principal
             }
         }
+/*		Liberty change: if block below is removed		
         if (sc.getUserPrincipal() != null) {
             AuthorizationPolicy policy = new PrincipalAuthorizationPolicy(sc);
             policy.setAuthorization(credentials);
             policy.setAuthorizationType(authType);
             return policy;
-        }
+        }	Liberty change: end */
         return null;
     }
 
@@ -251,14 +263,14 @@ public abstract class AbstractHTTPDestination
             }
             //Liberty perf change - avoid resize and set init size to 32 and factor 1
             inMessage = new MessageImpl(32, 1);
-            ExchangeImpl exchange = new ExchangeImpl();
-            exchange.setInMessage(inMessage);
             setupMessage(inMessage,
                      config,
                      context,
                      req,
                      resp);
 
+            ExchangeImpl exchange = new ExchangeImpl();
+            exchange.setInMessage(inMessage);
             exchange.setSession(new HTTPSession(req));
             ((MessageImpl) inMessage).setDestination(this);
         } else {
@@ -267,7 +279,7 @@ public abstract class AbstractHTTPDestination
             }
         }
 
-        copyKnownRequestAttributes(req, inMessage);
+        copyKnownRequestParameters(req, inMessage);	// Liberty change: copyKnownRequestAttributes is replaced by copyKnownRequestParameters
 
         inMessage.put(HttpServletResponse.class, resp); // Liberty change - reqd for SSE see LibertySseEventSinkImpl
 
@@ -305,9 +317,9 @@ public abstract class AbstractHTTPDestination
             p.complete();
         }
     }
-
-    private void copyKnownRequestAttributes(HttpServletRequest request, Message message) {
-        message.put(SERVICE_REDIRECTION, request.getAttribute(SERVICE_REDIRECTION));
+	// Liberty change: copyKnownRequestAttributes is replaced by copyKnownRequestParameters
+    private void copyKnownRequestParameters(HttpServletRequest request, Message message) {
+        message.put(SERVICE_REDIRECTION, request.getParameter(SERVICE_REDIRECTION));// Liberty change: getAtribute is replaced by getParameter
     }
 
     protected void setupMessage(final Message inMessage,
@@ -319,25 +331,26 @@ public abstract class AbstractHTTPDestination
                           req,
                           resp);
 
-        final Exchange exchange = inMessage.getExchange();
+//      final Exchange exchange = inMessage.getExchange();	Liberty change: line is removed
         DelegatingInputStream in = new DelegatingInputStream(req.getInputStream()) {
             @Override
             public void cacheInput() {
-                if (!cached && (exchange.isOneWay() || isWSAddressingReplyToSpecified(exchange))) {
+                if (!cached && inMessage.getExchange().getOutMessage() == null) { // Liberty change: replaced query -> !cached && (exchange.isOneWay() || isWSAddressingReplyToSpecified(exchange))
                     //For one-ways and WS-Addressing invocations with ReplyTo address,
                     //we need to cache the values of the HttpServletRequest
                     //so they can be queried later for things like paths and schemes
                     //and such like that.
                     //Please note, exchange used to always get the "current" message
-                    exchange.getInMessage().put(HTTP_REQUEST, new HttpServletRequestSnapshot(req));
+					// Liberty change: exchange.getInMessage() is replaced by inMessage.put
+                    inMessage.put(HTTP_REQUEST, new HttpServletRequestSnapshot(req));
                 }
                 super.cacheInput();
             }
-
+/*			// Liberty change: isWSAddressingReplyToSpecified method below is removed
             private boolean isWSAddressingReplyToSpecified(Exchange ex) {
                 AddressingProperties map = ContextUtils.retrieveMAPs(ex.getInMessage(), false, false, false);
                 return map != null && !ContextUtils.isGenericAddress(map.getReplyTo());
-            }
+            }	Liberty change: end */
         };
 
         inMessage.setContent(DelegatingInputStream.class, in);
@@ -416,8 +429,7 @@ public abstract class AbstractHTTPDestination
         Headers headers = new Headers(inMessage);
         headers.copyFromRequest(req);
         String credentials = headers.getAuthorization();
-        AuthorizationPolicy authPolicy = getAuthorizationPolicyFromMessage(credentials,
-                                                                           httpSecurityContext);
+        AuthorizationPolicy authPolicy = getAuthorizationPolicyFromMessage(credentials); // Liberty change: httpSecurityContext parameter is removed
         inMessage.put(AuthorizationPolicy.class, authPolicy);
 
         propogateSecureSession(req, inMessage);
@@ -467,7 +479,7 @@ public abstract class AbstractHTTPDestination
             String normalizedEncoding = HttpHeaderHelper.mapCharset(enc);
             if (normalizedEncoding == null) {
                 // Liberty Change Start
-                String m = "Invalid MediaType encoding: " + enc;
+                String m = "Invalid encoding: " + enc;
                 Tr.warning(tc, m);
                 throw new InvalidCharsetException(m);
                 // Liberty Change End
@@ -548,9 +560,12 @@ public abstract class AbstractHTTPDestination
      * @param inMessage the incoming message
      * @return the inbuilt backchannel
      */
+    @Trivial	// Liberty change: line is added
     @Override
     protected Conduit getInbuiltBackChannel(Message inMessage) {
+        LOG.entering("AbstractHTTPDestination", "getInbuiltBackChannel");	// Liberty change: line is added
         HttpServletResponse response = (HttpServletResponse) inMessage.get(HTTP_RESPONSE);
+        LOG.exiting("AbstractHTTPDestination", "getInbuiltBackChannel");	// Liberty change: line is added
         return new BackChannelConduit(response);
     }
 
@@ -702,11 +717,11 @@ public abstract class AbstractHTTPDestination
         Integer i = (Integer) message.get(Message.RESPONSE_CODE);
         if (i != null) {
             return i.intValue();
+        } else if (hasNoResponseContent(message)) {
+            return HttpURLConnection.HTTP_ACCEPTED;
+        } else {
+            return HttpURLConnection.HTTP_OK;
         }
-        int code = hasNoResponseContent(message) ? HttpURLConnection.HTTP_ACCEPTED : HttpURLConnection.HTTP_OK;
-        // put the code in the message so that others can get it
-        message.put(Message.RESPONSE_CODE, code);
-        return code;
     }
 
     /**
@@ -728,7 +743,7 @@ public abstract class AbstractHTTPDestination
         // old behavior not suppressing any responses  => ow && !pr
         // suppress empty responses for oneway calls   => ow && (!pr || epr)
         // suppress additionally empty responses for decoupled twoway calls =>
-        return (ow && !pr) || epr;
+        return (ow && (!pr || epr)) || (!ow && epr);	// replaced line return value (ow && !pr) || epr
     }
 
     private HttpServletResponse getHttpResponseFromMessage(Message message) throws IOException {
@@ -975,10 +990,13 @@ public abstract class AbstractHTTPDestination
         }
     }
 
+    @Trivial	// Liberty change: line is added
     @Override
     public void assertMessage(Message message) {
+        LOG.entering("AbstractHTTPDestination", "assertMessage");	// Liberty change: line is added
         PolicyDataEngine pde = bus.getExtension(PolicyDataEngine.class);
         pde.assertMessage(message, calcServerPolicy(message), new ServerPolicyCalculator());
+        LOG.exiting("AbstractHTTPDestination", "assertMessage");	// Liberty change: line is added
     }
 
     @Override

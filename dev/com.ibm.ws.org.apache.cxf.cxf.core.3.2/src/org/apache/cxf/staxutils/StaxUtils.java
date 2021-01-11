@@ -104,6 +104,7 @@ import org.apache.cxf.message.Message;
 public final class StaxUtils {
     // System properties for defaults, but also contextual properties usable
     // for StaxInInterceptor
+/*  Liberty change: 18 lines below are removed
     public static final String MAX_CHILD_ELEMENTS =
         "org.apache.cxf.stax.maxChildElements";
     public static final String MAX_ELEMENT_DEPTH =
@@ -122,7 +123,7 @@ public final class StaxUtils {
         "org.apache.cxf.stax.maxXMLCharacters";
 
     public static final String ALLOW_INSECURE_PARSER =
-        "org.apache.cxf.stax.allowInsecureParser";
+        "org.apache.cxf.stax.allowInsecureParser";  */
 
     private static final String INNER_ELEMENT_COUNT_SYSTEM_PROP =
         "org.apache.cxf.staxutils.innerElementCountThreshold";
@@ -143,8 +144,9 @@ public final class StaxUtils {
         "ns7".intern(), "ns8".intern(), "ns9".intern()
     };
 
-    private static int innerElementLevelThreshold = 100;
-    private static int innerElementCountThreshold = 50000;
+    private static int innerElementLevelThreshold = -1;    // Liberty change: 100 is replaced by -1
+    private static int innerElementCountThreshold = -1;  // Liberty change: 50000 is replaced by -1
+/*  Liberty change: 6 lines below are removed
     private static int maxAttributeCount = 500;
     private static int maxAttributeSize = 64 * 1024; //64K per attribute, likely just "list" will hit
     private static int maxTextLength = 128 * 1024 * 1024;  //128M - more than this should DEFINITLEY use MTOM
@@ -152,11 +154,11 @@ public final class StaxUtils {
     private static long maxElementCount = Long.MAX_VALUE;
     private static long maxXMLCharacters = Long.MAX_VALUE;
 
-    private static boolean allowInsecureParser;
-
+    private static boolean allowInsecureParser;  // Liberty change: end */
     static {
-        int i = getInteger("org.apache.cxf.staxutils.pool-size", 20);
-
+        // int i = getInteger("org.apache.cxf.staxutils.pool-size", 20); Liberty change: line is removed
+        int i = 20; // Liberty change: line is added
+/*      Liberty change: 6 lines below are removed
         NS_AWARE_INPUT_FACTORY_POOL = new ArrayBlockingQueue<>(i);
         OUTPUT_FACTORY_POOL = new ArrayBlockingQueue<>(i);
 
@@ -178,18 +180,29 @@ public final class StaxUtils {
             allowInsecureParser = "1".equals(s) || Boolean.parseBoolean(s);
         }
 
-        XMLInputFactory xif = null;
+        XMLInputFactory xif = null; Liberty change: end */
         try {
+/*          Liberty change: 6 lines below are removed
             xif = createXMLInputFactory(true);
             String xifClassName = xif.getClass().getName();
             if (!xifClassName.contains("ctc.wstx") && !xifClassName.contains("xml.xlxp")
                     && !xifClassName.contains("xml.xlxp2") && !xifClassName.contains("bea.core")) {
                 xif = null;
-            }
+            } Liberty change: end */
+            // Liberty change: 2 lines below are added
+            String s = SystemPropertyAction.getProperty("org.apache.cxf.staxutils.pool-size","-1");
+            i = Integer.parseInt(s);
         } catch (Throwable t) {
+            i = 20;  // Liberty change: line is added
             //ignore, can always drop down to the pooled factories
-            xif = null;
         }
+        // Liberty change: 5 lines below are added
+        if (i <= 0) {
+            i = 20;
+        }
+        NS_AWARE_INPUT_FACTORY_POOL = new ArrayBlockingQueue<XMLInputFactory>(i);
+        OUTPUT_FACTORY_POOL = new ArrayBlockingQueue<XMLOutputFactory>(i);  // Liberty change: end
+/*      Liberty change: 6 lines below are removed
         SAFE_INPUT_FACTORY = xif;
 
         XMLOutputFactory xof = null;
@@ -203,10 +216,43 @@ public final class StaxUtils {
         } catch (Throwable t) {
             //ignore, can always drop down to the pooled factories
         }
+        SAFE_OUTPUT_FACTORY = xof;    Liberty change: end */
+        // Liberty change: lines below are added
+        try {
+            String s =  SystemPropertyAction.getProperty(INNER_ELEMENT_LEVEL_SYSTEM_PROP, "-1");
+            innerElementLevelThreshold = Integer.parseInt(s);
+        } catch (Throwable t) {
+            innerElementLevelThreshold = -1;
+        }
+        if (innerElementLevelThreshold <= 0) {
+            innerElementLevelThreshold = -1;
+        }
+        try {
+            String s =  SystemPropertyAction.getProperty(INNER_ELEMENT_COUNT_SYSTEM_PROP, "-1");
+            innerElementCountThreshold = Integer.parseInt(s);
+        } catch (Throwable t) {
+            innerElementCountThreshold = -1;
+        }
+        if (innerElementCountThreshold <= 0) {
+            innerElementCountThreshold = -1;
+        }
+        XMLInputFactory xif = createXMLInputFactory(true);
+        String xifClassName = xif.getClass().getName();
+        if (xifClassName.contains("ctc.wstx") || xifClassName.contains("xml.xlxp")
+                || xifClassName.contains("xml.xlxp2") || xifClassName.contains("bea.core")) {
+            SAFE_INPUT_FACTORY = xif;
+        } else {
+            SAFE_INPUT_FACTORY = null;
+        }
+        XMLOutputFactory xof = XMLOutputFactory.newInstance();
+        String xofClassName = xof.getClass().getName();
+        if (xofClassName.contains("ctc.wstx") || xofClassName.contains("xml.xlxp")
+                || xofClassName.contains("xml.xlxp2") || xofClassName.contains("bea.core")) {
         SAFE_OUTPUT_FACTORY = xof;
-
+        } else {
+            SAFE_OUTPUT_FACTORY = null;
+        } // Liberty change: end
     }
-
     private StaxUtils() {
     }
     private static int getInteger(String prop, int def) {
@@ -317,15 +363,10 @@ public final class StaxUtils {
      */
     @FFDCIgnore(Throwable.class)
     public static XMLInputFactory createXMLInputFactory(boolean nsAware) {
-        XMLInputFactory factory = null;
-        try {
-            factory = XMLInputFactory.newInstance();
+        // XMLInputFactory factory = null;  Liberty change: line is removed
+        // try {  Liberty change: line is removed
+/*      Liberty change: catch block below is removed
         } catch (Throwable t) {
-            if (LOG.isLoggable(Level.FINE)) {
-                LOG.log(Level.FINE, "XMLInputFactory.newInstance() failed with: ", t);
-            }
-            factory = null;
-        }
         if (factory == null || !setRestrictionProperties(factory)) {
             try {
                 factory = createWoodstoxFactory();
@@ -348,7 +389,9 @@ public final class StaxUtils {
                     throw new RuntimeException("Cannot create a secure XMLInputFactory");
                 }
             }
-        }
+        } */
+        XMLInputFactory factory = XMLInputFactory.newInstance();  // Liberty change: line is added
+
         setProperty(factory, XMLInputFactory.IS_NAMESPACE_AWARE, nsAware);
         setProperty(factory, XMLInputFactory.SUPPORT_DTD, Boolean.FALSE);
         setProperty(factory, XMLInputFactory.IS_REPLACING_ENTITY_REFERENCES, Boolean.FALSE);
@@ -363,15 +406,14 @@ public final class StaxUtils {
 
         return factory;
     }
-
+/*  Liberty change: createWoodstoxFactory method below is removed
     private static XMLInputFactory createWoodstoxFactory() {
         return WoodstoxHelper.createInputFactory();
-    }
-
+    } Liberty change: end */
     public static XMLEventFactory createWoodstoxEventFactory() {
         return WoodstoxHelper.createEventFactory();
     }
-
+/*  Liberty change: setRestrictionProperties method below is removed
     private static boolean setRestrictionProperties(XMLInputFactory factory) {
         //For now, we can only support Woodstox 4.2.x and newer as none of the other
         //stax parsers support these settings
@@ -384,17 +426,17 @@ public final class StaxUtils {
                     && setProperty(factory, "com.ctc.wstx.maxTextLength", maxTextLength);
         return wstxMaxs
             && setProperty(factory, "com.ctc.wstx.minTextSegment", minTextSegment);
-    }
+    } Liberty change: end */
 
     @FFDCIgnore(Throwable.class)
-    private static boolean setProperty(XMLInputFactory f, String p, Object o) {
+    private static void setProperty(XMLInputFactory f, String p, Object o) { //Liberty change: boolean is replaced by void
         try {
             f.setProperty(p,  o);
-            return true;
+            // return true; Liberty change: line is removed
         } catch (Throwable t) {
             //ignore
         }
-        return false;
+        // return false;  Liberty change: line is removed
     }
 
 
@@ -560,6 +602,7 @@ public final class StaxUtils {
     }
 
     public static boolean toNextElement(DepthXMLStreamReader dr) {
+        LOG.entering("StaxUtils", "toNextElement"); // Liberty change: line is added
         if (dr.getEventType() == XMLStreamConstants.START_ELEMENT) {
             return true;
         }
@@ -576,7 +619,7 @@ public final class StaxUtils {
                     depth--;
                 }
             }
-
+            LOG.exiting("StaxUtils", "toNextElement");  // Liberty change: line is added
             return false;
         } catch (XMLStreamException e) {
             throw new RuntimeException("Couldn't parse stream.", e);
@@ -638,7 +681,7 @@ public final class StaxUtils {
                         reader.parse(((SAXSource)source).getInputSource());
                         return;
                     } catch (Exception e) {
-                        throw new XMLStreamException(e.getMessage(), e);
+                        throw new XMLStreamException(e);  // Liberty change: first parameter e.getMessage(), is removed
                     }
                 } else if (ss.getInputSource() == null) {
                     //nothing to copy, just return
@@ -674,25 +717,29 @@ public final class StaxUtils {
         }
         return d;
     }
+    @Trivial  // Liberty change: line is added
     public static void copy(Document doc, XMLStreamWriter writer) throws XMLStreamException {
         XMLStreamReader reader = createXMLStreamReader(doc);
         copy(reader, writer);
     }
+    @Trivial  // Liberty change: line is added
     public static void copy(Element node, XMLStreamWriter writer) throws XMLStreamException {
         XMLStreamReader reader = createXMLStreamReader(node);
         copy(reader, writer);
     }
-
+    @Trivial  // Liberty change: line is added
     public static void copy(XMLStreamReader reader, OutputStream os)
         throws XMLStreamException {
         XMLStreamWriter xsw = StaxUtils.createXMLStreamWriter(os);
         StaxUtils.copy(reader, xsw);
         xsw.close();
     }
-
+/*  Liberty change: writeTo method below is removed
     public static void writeTo(Node node, OutputStream os) throws XMLStreamException {
         copy(new DOMSource(node), os);
-    }
+    }  Liberty change: end */
+
+/*  Liberty change: writeTo method below is removed
     public static void writeTo(Node node, OutputStream os, int indent) throws XMLStreamException {
         if (indent > 0) {
             XMLStreamWriter writer = new PrettyPrintXMLStreamWriter(createXMLStreamWriter(os), indent);
@@ -704,7 +751,7 @@ public final class StaxUtils {
         } else {
             copy(new DOMSource(node), os);
         }
-    }
+    }  Liberty change: end */
     public static void writeTo(Node node, Writer os) throws XMLStreamException {
         writeTo(node, os, 0);
     }
@@ -729,17 +776,24 @@ public final class StaxUtils {
      * @param writer
      * @throws XMLStreamException
      */
+    @Trivial  // Liberty change: line is added
     public static void copy(XMLStreamReader reader, XMLStreamWriter writer) throws XMLStreamException {
+        LOG.entering("StaxUtils", "copy");  // Liberty change: line is added
         copy(reader, writer, false, false);
+        LOG.exiting("StaxUtils", "copy");  // Liberty change: line is added
     }
+    @Trivial  // Liberty change: line is added
     public static void copy(XMLStreamReader reader, XMLStreamWriter writer, boolean fragment)
         throws XMLStreamException {
+        LOG.entering("StaxUtils", "copy");  // Liberty change: line is added
         copy(reader, writer, fragment, false);
+        LOG.exiting("StaxUtils", "copy");  // Liberty change: line is added
     }
     public static void copy(XMLStreamReader reader,
                             XMLStreamWriter writer,
                             boolean fragment,
                             boolean isThreshold) throws XMLStreamException {
+        LOG.entering("StaxUtils", "copy");  // Liberty change: line is added
         // number of elements read in
         int read = 0;
         int elementCount = 0;
@@ -774,6 +828,7 @@ public final class StaxUtils {
                 }
                 read--;
                 if (read < 0 && fragment) {
+                    LOG.exiting("StaxUtils", "copy");  // Liberty change: line is added
                     return;
                 }
                 if (isThreshold && !countStack.isEmpty()) {
@@ -803,10 +858,12 @@ public final class StaxUtils {
             }
             event = reader.next();
         }
+        LOG.exiting("StaxUtils", "copy");  // Liberty change: line is added
     }
-
+    @Trivial  // Liberty change: line is added
     private static void writeStartElement(XMLStreamReader reader, XMLStreamWriter writer)
         throws XMLStreamException {
+        LOG.entering("StaxUtils", "writeStartElement"); // Liberty change: line is added
         String uri = reader.getNamespaceURI();
         String prefix = reader.getPrefix();
         String local = reader.getLocalName();
@@ -853,9 +910,10 @@ public final class StaxUtils {
             if (nsPrefix == null) {
                 nsPrefix = "";
             }
+/*          Liberty change:  if block below is removed
             if (nsURI == null) {
                 nsURI = "";
-            }
+            } */
             if (nsPrefix.isEmpty()) {
                 writer.writeDefaultNamespace(nsURI);
                 writer.setDefaultNamespace(nsURI);
@@ -867,6 +925,7 @@ public final class StaxUtils {
             if (nsURI.equals(uri) && nsPrefix.equals(prefix)) {
                 writeElementNS = false;
             }
+            LOG.exiting("StaxUtils", "writeStartElement");  // Liberty change: line is added
         }
 
         // Check if the namespace still needs to be written.
@@ -1081,9 +1140,10 @@ public final class StaxUtils {
 
         return sortedAttrs;
     }
-
+    @Trivial  // Liberty change: line is added
     public static void writeNode(Node n, XMLStreamWriter writer, boolean repairing)
         throws XMLStreamException {
+        LOG.entering("StaxUtils", "writeNode"); // Liberty change: line is added
 
         switch (n.getNodeType()) {
         case Node.ELEMENT_NODE:
@@ -1130,6 +1190,7 @@ public final class StaxUtils {
         default:
             throw new IllegalStateException("Found type: " + n.getClass().getName());
         }
+        LOG.exiting("StaxUtils", "writeNode"); // Liberty change: line is added
     }
 
     public static Document read(Source s) throws XMLStreamException {
@@ -1156,6 +1217,7 @@ public final class StaxUtils {
             }
         }
     }
+
     public static Document read(Reader s) throws XMLStreamException {
         XMLStreamReader reader = createXMLStreamReader(s);
         try {
@@ -1168,11 +1230,14 @@ public final class StaxUtils {
             }
         }
     }
+
+
     public static Document read(File is) throws XMLStreamException, IOException {
         try (InputStream fin = Files.newInputStream(is.toPath())) {
             return read(fin);
         }
     }
+    
     public static Document read(InputSource s) throws XMLStreamException {
         XMLStreamReader reader = createXMLStreamReader(s);
         try {
@@ -1381,7 +1446,7 @@ public final class StaxUtils {
     }
 
     public static class StreamToDOMContext {
-        private Stack<Node> stack = new Stack<>();
+        private Stack<Node> stack = new Stack<Node>();
         private int elementCount;
         private boolean repairing;
         private boolean recordLoc;
@@ -1764,21 +1829,33 @@ public final class StaxUtils {
             returnXMLInputFactory(factory);
         }
     }
-
+    @Trivial  // Liberty change: line is added
     public static XMLStreamReader createXMLStreamReader(Element el) {
+        LOG.entering("StaxUtils", "createXMLStreamReader"); // Liberty change: line is added
+        LOG.exiting("StaxUtils", "createXMLStreamReader");  // Liberty change: line is added
         return new W3CDOMStreamReader(el);
     }
+    @Trivial  // Liberty change: line is added
     public static XMLStreamReader createXMLStreamReader(Document doc) {
+        LOG.entering("StaxUtils", "createXMLStreamReader"); // Liberty change: line is added
+        LOG.exiting("StaxUtils", "createXMLStreamReader");  // Liberty change: line is added
         return new W3CDOMStreamReader(doc.getDocumentElement());
     }
+    @Trivial  // Liberty change: line is added
     public static XMLStreamReader createXMLStreamReader(Element el, String sysId) {
+        LOG.entering("StaxUtils", "createXMLStreamReader"); // Liberty change: line is added
+        LOG.exiting("StaxUtils", "createXMLStreamReader");  // Liberty change: line is added
         return new W3CDOMStreamReader(el, sysId);
     }
+    @Trivial  // Liberty change: line is added
     public static XMLStreamReader createXMLStreamReader(Document doc, String sysId) {
+        LOG.entering("StaxUtils", "createXMLStreamReader"); // Liberty change: line is added
+        LOG.exiting("StaxUtils", "createXMLStreamReader");  // Liberty change: line is added
         return new W3CDOMStreamReader(doc.getDocumentElement(), sysId);
     }
-
+    @Trivial  // Liberty change: line is added
     public static XMLStreamReader createXMLStreamReader(Source source) {
+        LOG.entering("StaxUtils", "createXMLStreamReader"); // Liberty change: line is added
         try {
             if (source instanceof DOMSource) {
                 DOMSource ds = (DOMSource)source;
@@ -1791,6 +1868,7 @@ public final class StaxUtils {
                 }
 
                 if (null != el) {
+                    LOG.exiting("StaxUtils", "createXMLStreamReader");  // Liberty change: line is added
                     return new W3CDOMStreamReader(el, source.getSystemId());
                 }
             } else if (source instanceof StAXSource) {
@@ -1798,10 +1876,11 @@ public final class StaxUtils {
             } else if (source instanceof StaxSource) {
                 return ((StaxSource)source).getXMLStreamReader();
             } else if (source instanceof SAXSource) {
-                SAXSource ss = (SAXSource)source;
-                if (ss.getXMLReader() == null) {
+                // SAXSource ss = (SAXSource)source;  Liberty change: line is removed
+                // if (ss.getXMLReader() == null) {   Liberty change: line is removed
+                LOG.exiting("StaxUtils", "createXMLStreamReader");  // Liberty change: line is added
                     return createXMLStreamReader(((SAXSource)source).getInputSource());
-                }
+                // }  Liberty change: line is removed
             }
 
             XMLInputFactory factory = getXMLInputFactory();
@@ -1824,6 +1903,7 @@ public final class StaxUtils {
                                                                ss.getReader());
                     }
                 }
+                LOG.exiting("StaxUtils", "createXMLStreamReader");  // Liberty change: line is added
                 return reader;
             } finally {
                 returnXMLInputFactory(factory);
@@ -1929,6 +2009,7 @@ public final class StaxUtils {
 
     public static void printXmlFragment(XMLStreamReader reader) {
         try {
+/*          Liberty change: 10 lines below are removed
             StringWriter sw = new StringWriter(1024);
             XMLStreamWriter writer = null;
             try {
@@ -1938,7 +2019,8 @@ public final class StaxUtils {
             } finally {
                 StaxUtils.close(writer);
             }
-            LOG.info(sw.toString());
+            LOG.info(sw.toString()); Liberty change:  end */
+            LOG.info(toString(read(reader), 4)); // Liberty change: line is added
         } catch (XMLStreamException e) {
             LOG.severe(e.getMessage());
         }
@@ -2055,6 +2137,7 @@ public final class StaxUtils {
             //shouldn't get here
         }
     }
+/* Liberty change: method below is removed
     public static void print(Node node) {
         XMLStreamWriter writer = null;
         try {
@@ -2065,9 +2148,9 @@ public final class StaxUtils {
             throw new RuntimeException(e);
         } finally {
             StaxUtils.close(writer);
-        }
-    }
+        } Liberty change:  end */
 
+/*  Liberty change: method below is removed
     public static String toString(Source src) {
         StringWriter sw = new StringWriter(1024);
         XMLStreamWriter writer = null;
@@ -2081,11 +2164,14 @@ public final class StaxUtils {
             StaxUtils.close(writer);
         }
         return sw.toString();
-    }
+    }	Liberty change:  end */
     public static String toString(Node src) {
-        return toString(new DOMSource(src));
+        LOG.entering("StaxUtils", "toString");  // Liberty change: line is added
+        LOG.exiting("StaxUtils", "toString"); // Liberty change: line is added
+        return toString(src);
     }
-    public static String toString(Document doc) {
+    public static String toString(Document doc) throws XMLStreamException {
+        LOG.entering("StaxUtils", "toString");  // Liberty change: line is added
         StringWriter sw = new StringWriter(1024);
         XMLStreamWriter writer = null;
         try {
@@ -2097,10 +2183,27 @@ public final class StaxUtils {
         } finally {
             StaxUtils.close(writer);
         }
+        LOG.exiting("StaxUtils", "toString"); // Liberty change: line is added
         return sw.toString();
     }
+    @Trivial  // Liberty change: line is added
     public static String toString(Element el) {
-        return toString(el, 0);
+        // return toString(el, 0);  Liberty change: line is removed
+        // Liberty change: 12 lines below are added
+        LOG.entering("StaxUtils", "toString");
+        StringWriter sw = new StringWriter(1024);
+        XMLStreamWriter writer = null;
+        try {
+            writer = createXMLStreamWriter(sw);
+            copy(el, writer);
+            writer.flush();
+        } catch (XMLStreamException e) {
+               throw new RuntimeException(e);
+        } finally {
+            StaxUtils.close(writer);
+        }
+        LOG.exiting("StaxUtils", "toString");
+        return sw.toString(); // Liberty change: end
     }
     public static String toString(Element el, int indent) {
         StringWriter sw = new StringWriter(1024);
@@ -2119,13 +2222,35 @@ public final class StaxUtils {
         }
         return sw.toString();
     }
+    // Liberty change: toString method below is created this method to use for IBM changes
+    public static String toString(Document doc, int indent) {
+        StringWriter sw = new StringWriter(1024);
+        XMLStreamWriter writer = null;
+        try {
+            writer = createXMLStreamWriter(sw);
+            if (indent > 0) {
+                writer = new PrettyPrintXMLStreamWriter(writer, indent);
+            }
+            copy(doc, writer);
+            writer.flush();
+        } catch (XMLStreamException e) {
+            throw new RuntimeException(e);
+        } finally {
+            StaxUtils.close(writer);
+        }
+        return sw.toString();
+    } // Liberty change: end
+    @Trivial  // Liberty change: line is added
     public static void close(XMLStreamReader reader) throws XMLStreamException {
+        LOG.entering("StaxUtils", "close"); // Liberty change: line is added
         if (reader != null) {
             reader.close();
         }
+        LOG.exiting("StaxUtils", "close");  // Liberty change: line is added
     }
-
+    @Trivial  // Liberty change: line is added
     public static void close(XMLStreamWriter writer) {
+        LOG.entering("StaxUtils", "close"); // Liberty change: line is added
         if (writer != null) {
             try {
                 writer.close();
@@ -2133,6 +2258,7 @@ public final class StaxUtils {
                 //ignore
             }
         }
+        LOG.exiting("StaxUtils", "close");  // Liberty change: line is added
     }
 
     public static boolean isSecureReader(XMLStreamReader reader, Message message) {
@@ -2148,7 +2274,7 @@ public final class StaxUtils {
         }
         return false;
     }
-
+/*  Liberty change: configureReader method below is removed
     public static XMLStreamReader configureReader(XMLStreamReader xreader, Message message) throws XMLStreamException {
         Integer messageMaxChildElements = PropertyUtils.getInteger(message, MAX_CHILD_ELEMENTS);
         Integer messageMaxElementDepth = PropertyUtils.getInteger(message, MAX_ELEMENT_DEPTH);
@@ -2160,8 +2286,10 @@ public final class StaxUtils {
         return configureReader(xreader, messageMaxChildElements, messageMaxElementDepth,
                                messageMaxAttributeCount, messageMaxAttributeSize, messageMaxTextLength,
                                messageMaxElementCount, messageMaxXMLCharacters);
-    }
+    } Liberty change:  end */
 
+
+/*  Liberty change: configureReader method below is removed
     //CHECKSTYLE:OFF - lots of params to configure
     public static XMLStreamReader configureReader(XMLStreamReader reader, Integer maxChildElements,
                                        Integer maxElementDepth, Integer maxAttributeCount,
@@ -2236,9 +2364,10 @@ public final class StaxUtils {
             }
         }
         return reader;
-    }
+    } Liberty change:  end */
+/*  Liberty change: setProperty method below is removed
     private static void setProperty(XMLStreamReader reader, String p, Object v) {
         WoodstoxHelper.setProperty(reader, p, v);
-    }
+    } Liberty change:  end */
 
 }
