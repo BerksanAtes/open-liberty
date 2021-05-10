@@ -60,7 +60,7 @@ public class JAXRS21ClientCompletionStageRxInvokerTest extends JAXRS21AbstractTe
 
     @AfterClass
     public static void tearDown() throws Exception {
-        server.stopServer("SRVE9967W");
+        server.stopServer("SRVE9967W", "CWWKE1102W");
     }
 
     @Before
@@ -104,9 +104,6 @@ public class JAXRS21ClientCompletionStageRxInvokerTest extends JAXRS21AbstractTe
      */
 
     @Test
-    @SkipForRepeat("EE9_FEATURES") // Continue to skip seeing E handleFailure RESTEASY002005: Failed executing GET /JAXRS21bookstore2/rxget3
-//    org.jboss.resteasy.core.NoMessageBodyWriterFoundFailure: Could not find MessageBodyWriter for response object of type: java.util.ArrayList of media type: application/xml;charset=UTF-8;resteasy-server-has-produces=true
-// may have to convert the ArrayList to a byte[]
     public void testCompletionStageRxInvoker_get3WithGenericType() throws Exception {
         Map<String, String> p = new HashMap<String, String>();
         this.runTestOnServer(completionStageRxInvokerTarget, "testCompletionStageRxInvoker_get3WithGenericType", p, "true");
@@ -167,7 +164,6 @@ public class JAXRS21ClientCompletionStageRxInvokerTest extends JAXRS21AbstractTe
      */
 
     @Test
-    @SkipForRepeat("EE9_FEATURES") // currently broken due to multiple issues
     public void testCompletionStageRxInvoker_post3WithGenericType() throws Exception {
         Map<String, String> p = new HashMap<String, String>();
         this.runTestOnServer(completionStageRxInvokerTarget, "testCompletionStageRxInvoker_post3WithGenericType", p, "Test book3");
@@ -204,6 +200,7 @@ public class JAXRS21ClientCompletionStageRxInvokerTest extends JAXRS21AbstractTe
     }
 
     @Test
+    @SkipForRepeat("EE9_FEATURES") // Skip this test for EE9 as this test is failing intermittently with EE9.  See issue https://github.com/OpenLiberty/open-liberty/issues/16651
     public void testCompletionStageRxInvoker_getConnectionTimeout() throws Exception {
         Map<String, String> p = new HashMap<String, String>();
         this.runTestOnServer(completionStageRxInvokerTarget, "testCompletionStageRxInvoker_getConnectionTimeout", p, "Timeout as expected");
@@ -216,6 +213,7 @@ public class JAXRS21ClientCompletionStageRxInvokerTest extends JAXRS21AbstractTe
     }
 
     @Test
+    @SkipForRepeat("EE9_FEATURES") // Skip this test for EE9 as this test is failing intermittently with EE9.  See issue https://github.com/OpenLiberty/open-liberty/issues/16651
     public void testCompletionStageRxInvoker_postConnectionTimeout() throws Exception {
         Map<String, String> p = new HashMap<String, String>();
         this.runTestOnServer(completionStageRxInvokerTarget, "testCompletionStageRxInvoker_postConnectionTimeout", p, "Timeout as expected");

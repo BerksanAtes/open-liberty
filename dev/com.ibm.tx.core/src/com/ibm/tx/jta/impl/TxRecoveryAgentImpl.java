@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2002, 2020 IBM Corporation and others.
+ * Copyright (c) 2002, 2021 IBM Corporation and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -85,8 +85,13 @@ public class TxRecoveryAgentImpl implements RecoveryAgent {
 
     private boolean _checkingLeases = true;
 
+    /**
+     * Flag to indicate whether the server is stopping.
+     */
+    volatile private boolean _serverStopping;
+
     protected TxRecoveryAgentImpl() {
-    }
+	}
 
     private static ThreadLocal<Boolean> _replayThread = new ThreadLocal<Boolean>();
 
@@ -174,6 +179,12 @@ public class TxRecoveryAgentImpl implements RecoveryAgent {
 
             // Big message if Peer recovery is supported, just debug otherwise
             if (_isPeerRecoverySupported) {
+                // If we are attempting to recover a peer and the home server is stopping, then do not continue
+                if (_serverStopping) {
+                    if (tc.isEntryEnabled())
+                        Tr.exit(tc, "initiateRecovery", "server stopping");
+                    return;
+                }
                 Tr.audit(tc, "WTRN0108I: Recovery initiated for server " + recoveredServerIdentity);
             } else {
                 if (tc.isDebugEnabled())
@@ -460,7 +471,7 @@ public class TxRecoveryAgentImpl implements RecoveryAgent {
                                                     _recoveryGroup,
                                                     this,
                                                     _recoveryDirector,
-                                                    cp.getLeaseLength() * cp.getLeaseRenewalTime() / 100,
+                                                    cp.getLeaseLength() * cp.getLeaseRenewalThreshold() / 100,
                                                     cp.getLeaseCheckInterval());
                 }
             }
@@ -598,8 +609,15 @@ public class TxRecoveryAgentImpl implements RecoveryAgent {
         if (tc.isEntryEnabled())
             Tr.entry(tc, "stop", new Object[] { Boolean.valueOf(immediate) });
 
+        // Set the flag to signify that the server is stopping
+        _serverStopping = true;
+
         // Stop lease timeout alarm popping when server is on its way down
         LeaseTimeoutManager.stopTimeout();
+        // Additionally, if we have a lease log for peer recovery, alert it that the server is stopping (the alarm may already have popped)
+        if (_leaseLog != null) {
+            _leaseLog.serverStopping();
+        }
 
         // Drive the serverStopping() method on the SQLMultiScopeRecoveryLog if appropriate. This will manage
         // the cancelling of the HADB Log Availability alarm
@@ -609,6 +627,7 @@ public class TxRecoveryAgentImpl implements RecoveryAgent {
             HeartbeatLog heartbeatLog = (HeartbeatLog) _partnerLog;
             heartbeatLog.serverStopping();
         }
+
         // The entire server is shutting down. All recovery/peer recovery processing must be stopped. Sping
         // through all known failure scope controllers (which includes the local failure scope if we started
         // processing recovery for it) and tell them to shutdown.

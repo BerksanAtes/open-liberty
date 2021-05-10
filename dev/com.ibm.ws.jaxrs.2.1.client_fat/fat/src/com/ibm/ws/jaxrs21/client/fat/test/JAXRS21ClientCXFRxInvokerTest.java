@@ -104,14 +104,12 @@ public class JAXRS21ClientCXFRxInvokerTest extends JAXRS21AbstractTest {
     }
 
     @Test
-    @SkipForRepeat("EE9_FEATURES") // currently broken due to multiple issues
     public void testObservableRxInvoker_get3WithGenericType() throws Exception {
         Map<String, String> p = new HashMap<String, String>();
         this.runTestOnServer(cxfRxInvokerTarget, "testObservableRxInvoker_get3WithGenericType", p, "true");
     }
 
     @Test
-    @SkipForRepeat("EE9_FEATURES") // currently broken due to multiple issues
     public void testFlowableRxInvoker_get3WithGenericType() throws Exception {
         Map<String, String> p = new HashMap<String, String>();
         this.runTestOnServer(cxfRxInvokerTarget, "testFlowableRxInvoker_get3WithGenericType", p, "true");
@@ -154,14 +152,12 @@ public class JAXRS21ClientCXFRxInvokerTest extends JAXRS21AbstractTest {
     }
 
     @Test
-    @SkipForRepeat("EE9_FEATURES") // currently broken due to multiple issues
     public void testObservableRxInvoker_post3WithGenericType() throws Exception {
         Map<String, String> p = new HashMap<String, String>();
         this.runTestOnServer(cxfRxInvokerTarget, "testObservableRxInvoker_post3WithGenericType", p, "Test book3");
     }
 
     @Test
-    @SkipForRepeat("EE9_FEATURES") // currently broken due to multiple issues
     public void testFlowableRxInvoker_post3WithGenericType() throws Exception {
         Map<String, String> p = new HashMap<String, String>();
         this.runTestOnServer(cxfRxInvokerTarget, "testFlowableRxInvoker_post3WithGenericType", p, "Test book3");
@@ -204,12 +200,14 @@ public class JAXRS21ClientCXFRxInvokerTest extends JAXRS21AbstractTest {
     }
 
     @Test
+    @SkipForRepeat("EE9_FEATURES") // Skip this test for EE9 as this test is failing intermittently with EE9.  See issue  https://github.com/OpenLiberty/open-liberty/issues/16648
     public void testObservableRxInvoker_getConnectionTimeout() throws Exception {
         Map<String, String> p = new HashMap<String, String>();
         this.runTestOnServer(cxfRxInvokerTarget, "testObservableRxInvoker_getConnectionTimeout", p, "Timeout as expected");
     }
 
     @Test
+    @SkipForRepeat("EE9_FEATURES") // Skip this test for EE9 as this test is failing intermittently with EE9.  See issue  https://github.com/OpenLiberty/open-liberty/issues/16648
     public void testFlowableRxInvoker_getConnectionTimeout() throws Exception {
         Map<String, String> p = new HashMap<String, String>();
         this.runTestOnServer(cxfRxInvokerTarget, "testFlowableRxInvoker_getConnectionTimeout", p, "Timeout as expected");
@@ -228,12 +226,14 @@ public class JAXRS21ClientCXFRxInvokerTest extends JAXRS21AbstractTest {
     }
 
     @Test
+    @SkipForRepeat("EE9_FEATURES") // Skip this test for EE9 as this test is failing intermittently with EE9.  See issue  https://github.com/OpenLiberty/open-liberty/issues/16648
     public void testObservableRxInvoker_postConnectionTimeout() throws Exception {
         Map<String, String> p = new HashMap<String, String>();
         this.runTestOnServer(cxfRxInvokerTarget, "testObservableRxInvoker_postConnectionTimeout", p, "Timeout as expected");
     }
 
     @Test
+    @SkipForRepeat("EE9_FEATURES") // Skip this test for EE9 as this test is failing intermittently with EE9.  See issue  https://github.com/OpenLiberty/open-liberty/issues/16648
     public void testFlowableRxInvoker_postConnectionTimeout() throws Exception {
         Map<String, String> p = new HashMap<String, String>();
         this.runTestOnServer(cxfRxInvokerTarget, "testFlowableRxInvoker_postConnectionTimeout", p, "Timeout as expected");

@@ -16,6 +16,7 @@ import static org.junit.Assume.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,9 +38,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import com.ibm.websphere.simplicity.RemoteFile;
 import com.ibm.websphere.simplicity.log.Log;
 
 import componenttest.custom.junit.runner.FATRunner;
+import componenttest.topology.impl.LibertyFileManager;
 import componenttest.topology.impl.LibertyServer;
 import componenttest.topology.impl.LibertyServerFactory;
 
@@ -93,6 +96,9 @@ public class PackageRunnableTest {
 
         outputAutoFVTDirectory = new File("output/servers/", serverName);
         Log.info(c, method, "outputAutoFVTDirectory: " + outputAutoFVTDirectory.getAbsolutePath());
+
+        // Create the /lib/extract folder if it does not exist so that the package tests will execute.
+        Log.info(c, method, "Was the /lib/extract folder created manually for this test case execution : " + createWLPLibExtract());
     }
 
     @BeforeClass
@@ -126,9 +132,9 @@ public class PackageRunnableTest {
         // Doesn't work on z/OS (because you can't package into a jar on z/OS)
         assumeTrue(!System.getProperty("os.name").equals("z/OS"));
 
-        String stdout = server.executeServerScript("package",
-                                                   new String[] { "--archive=" + runnableJar.getAbsolutePath(),
-                                                                  "--include=minify,runnable" }).getStdout();
+        String[] args = new String[] { "--archive=" + runnableJar.getAbsolutePath(), "--include=minify,runnable" };
+        Log.info(c, method, "package command parameters = " + Arrays.toString(args));
+        String stdout = server.executeServerScript("package", args).getStdout();
 
         String searchString = "Server " + serverName + " package complete";
         if (!stdout.contains(searchString)) {
@@ -140,17 +146,6 @@ public class PackageRunnableTest {
 
         // Validate the package was successful.  If not, log off the manifest.mf contents.
         boolean rc = validatePackageManifestExists();
-
-        // If we have an invalid package, save off the jar for troubleshooting.
-        if (rc == false) {
-            outputAutoFVTDirectory.mkdirs();
-            Log.info(c, method, "Copying directory from " +
-                                runnableJar.getAbsolutePath() + " to " +
-                                outputAutoFVTDirectory.getAbsolutePath() + "/" + serverName + ".jar");
-
-            File srcDir = new File(runnableJar.getAbsolutePath());
-            copyFile(srcDir, new File(outputAutoFVTDirectory.getAbsolutePath() + "/" + serverName + ".jar"));
-        }
 
         executeTheJar(extractDirectory1, false, true, false);
         checkDirStructure(extractDirectory1, true);
@@ -174,6 +169,7 @@ public class PackageRunnableTest {
         // Doesn't work on z/OS (because you can't package into a jar on z/OS)
         assumeTrue(!System.getProperty("os.name").equals("z/OS"));
 
+        Log.info(c, method, "*** This test is ONLY using --include=runnable, and does not include minify!!!!");
         String stdout = server.executeServerScript("package",
                                                    new String[] { "--archive=" + runnableJar.getAbsolutePath(),
                                                                   "--include=runnable" }).getStdout();
@@ -188,39 +184,6 @@ public class PackageRunnableTest {
 
         executeTheJar(extractDirectory2, true, true, false);
         checkDirStructure(extractDirectory2, true);
-    }
-
-    /**
-     * When WLP_JAR_EXTRACT_DIR is not set, the server should be completely deleted minus the /logs folder via the Shutdown Hook.
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testRunnableDeleteServerMinusLogsFolder() throws Exception {
-
-        String method = "testRunnableDeleteServerMinusLogsFolder";
-
-        // Doesn't work on z/OS (because you can't package into a jar on z/OS)
-        assumeTrue(!System.getProperty("os.name").equals("z/OS"));
-
-        String stdout = server.executeServerScript("package",
-                                                   new String[] { "--archive=" + runnableJar.getAbsolutePath(),
-                                                                  "--include=minify,runnable" }).getStdout();
-
-        String searchString = "Server " + serverName + " package complete";
-        if (!stdout.contains(searchString)) {
-            Log.warning(c, "Warning: test case " + PackageRunnableTest.class.getName() + " could not package server " + serverName);
-            return; // get out
-        }
-
-        Log.info(c, method, "stdout for package cmd is: \n" + stdout);
-
-        extractLocation = new File(executeTheJar(extractDirectory3, true, false, true));
-
-        // wait 30s to give the shutdown script time to run in the shutdown hook
-        Thread.sleep(30000);
-
-        checkDirStructure(extractLocation, false);
     }
 
     /**
@@ -257,14 +220,52 @@ public class PackageRunnableTest {
     }
 
     /**
+     * When WLP_JAR_EXTRACT_DIR is not set, the server should be completely deleted minus the /logs folder via the Shutdown Hook.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testRunnableDeleteServerMinusLogsFolder() throws Exception {
+
+        String method = "testRunnableDeleteServerMinusLogsFolder";
+
+        // Doesn't work on z/OS (because you can't package into a jar on z/OS)
+        assumeTrue(!System.getProperty("os.name").equals("z/OS"));
+
+        String stdout = server.executeServerScript("package",
+                                                   new String[] { "--archive=" + runnableJar.getAbsolutePath(),
+                                                                  "--include=minify,runnable" }).getStdout();
+
+        String searchString = "Server " + serverName + " package complete";
+        if (!stdout.contains(searchString)) {
+            Log.warning(c, "Warning: test case " + PackageRunnableTest.class.getName() + " could not package server " + serverName);
+            return; // get out
+        }
+
+        Log.info(c, method, "stdout for package cmd is: \n" + stdout);
+
+        extractLocation = new File(executeTheJar(extractDirectory3, true, false, true));
+
+        // Make sure the server is stopped
+        assertNotNull("The server did not show that it had stopped after executing the jar.",
+                      server.waitForStringInLog("CWWKE0036I:.*"));
+
+        // wait 30s to give the shutdown script time to run in the shutdown hook
+        Thread.sleep(30000);
+
+        checkDirStructure(extractLocation, false);
+    }
+
+    /**
      * Checks that the /logs and optionally the /bin folder exist within the /wlp folder structure.
      *
      * @param extractDir
      * @param shouldBinFolderExist
      *
      */
-    private void checkDirStructure(File extractDir, boolean shouldBinFolderExist) {
+    private void checkDirStructure(File extractDir, boolean shouldFolderExist) {
 
+        String method = "checkDirStructure";
         StringBuffer sb = new StringBuffer();
         File[] files = extractDir.listFiles();
         for (int i = 0; i < files.length; i++) {
@@ -272,24 +273,26 @@ public class PackageRunnableTest {
         }
 
         File logDir = null;
-        File binDir = null;
+        File templateDir = null;
 
         if (extractDir.getAbsolutePath().endsWith("wlp")) {
             logDir = new File(extractDir.getAbsolutePath() + File.separator + "usr" + File.separator + "servers" + File.separator + serverName
                               + File.separator + "logs");
-            binDir = new File(extractDir.getAbsolutePath() + File.separator + "bin");
+            templateDir = new File(extractDir.getAbsolutePath() + File.separator + "templates");
         } else {
             logDir = new File(extractDir.getAbsolutePath() + File.separator + "wlp" + File.separator + "usr" + File.separator + "servers" + File.separator + serverName
                               + File.separator + "logs");
-            binDir = new File(extractDir.getAbsolutePath() + File.separator + "wlp" + File.separator + "bin");
+            templateDir = new File(extractDir.getAbsolutePath() + File.separator + "wlp" + File.separator + "templates");
         }
 
+        // Logs should always exist regardless
         assertTrue(File.separator + "logs folder at " + logDir.getAbsolutePath() + " does not exist, but should. " + sb.toString(), logDir.exists());
 
-        if (shouldBinFolderExist) {
-            assertTrue(File.separator + "bin folder at " + binDir.getAbsolutePath() + " does not exist, but should. Contents =" + sb.toString(), binDir.exists());
+        if (shouldFolderExist) {
+            assertTrue(File.separator + "templates folder at " + templateDir.getAbsolutePath() + " does not exist, but should. Contents =" + sb.toString(), templateDir.exists());
         } else {
-            assertTrue(File.separator + "bin folder at " + binDir.getAbsolutePath() + " exists, but should not. Contents = " + sb.toString(), !binDir.exists());
+            Log.info(c, method, "Contents at " + templateDir.getAbsolutePath() + " are : " + sb.toString());
+            assumeTrue(!templateDir.exists());
         }
     }
 
@@ -301,6 +304,7 @@ public class PackageRunnableTest {
      */
     private String executeTheJar(File extractDirectory, boolean useDummyUserDir, boolean useRunEnv, boolean useNormalStop) throws Exception, InterruptedException {
 
+        String method = "executeTheJar";
         if (!extractDirectory.exists()) {
             extractDirectory.mkdirs();
         }
@@ -310,7 +314,7 @@ public class PackageRunnableTest {
         assertTrue("Extract directory " + extractDirectory.getAbsolutePath() + " does not exist.", extractDirectory.exists());
 
         String[] cmd = { "java", "-jar", runnableJar.getAbsolutePath() };
-        Log.info(c, "executeTheJar", "Running command: " + Arrays.toString(cmd));
+        Log.info(c, method, "Running command: " + Arrays.toString(cmd));
         ProcessBuilder processBuilder = new ProcessBuilder(cmd);
         processBuilder.redirectErrorStream(true);
         if (useRunEnv == true) {
@@ -335,7 +339,7 @@ public class PackageRunnableTest {
 
             synchronized (proc) {
                 proc.wait(1000); // wait 1 second
-                Log.info(c, "executeTheJar", "Waiting for server to complete initialization - " + count + " seconds elapsed.");
+                Log.info(c, method, "Waiting for server to complete initialization - " + count + " seconds elapsed.");
             }
             found = outputReader.foundWatchFor();
             extractLoc = outputReader.extractLoc();
@@ -343,15 +347,15 @@ public class PackageRunnableTest {
         }
 
         if (!found) {
-            Log.info(c, "executeTheJar", "Process is alive: " + proc.isAlive());
+            Log.info(c, method, "Process is alive: " + proc.isAlive());
             // capture the messages.log for debugging test
             File messagesLog = new File(server.getInstallRoot(), "/usr/servers/" + serverName + "/logs/messages.log").getAbsoluteFile();
             if (messagesLog.exists()) {
                 Files.lines(messagesLog.toPath()).forEach((l) -> {
-                    Log.info(c, "executeTheJar", "MESSAGES LINE: " + l);
+                    Log.info(c, method, "MESSAGES LINE: " + l);
                 });
             } else {
-                Log.info(c, "executeTheJar", "No messages.log - " + messagesLog.getAbsolutePath());
+                Log.info(c, method, "No messages.log - " + messagesLog.getAbsolutePath());
             }
 
             // log the contents of the runnable jar's manifest.mf
@@ -360,13 +364,13 @@ public class PackageRunnableTest {
 
             for (Enumeration<JarEntry> e = jarFile.entries(); e.hasMoreElements();) {
                 JarEntry je = e.nextElement();
-                Log.info(c, "executeTheJar", "entry name = " + je.getName() + " entry size = " + je.getSize());
+                Log.info(c, method, "entry name = " + je.getName() + " entry size = " + je.getSize());
                 if (je.getName().equals("META-INF/MANIFEST.MF")) {
 
-                    Log.info(c, "executeTheJar", "=== Start dumping contents of manifest file ===");
+                    Log.info(c, method, "=== Start dumping contents of manifest file ===");
                     readJarEntryContent(jarFile, je);
                     manifestFound = true;
-                    Log.info(c, "executeTheJar", "=== End dumping contents of manifest file ===");
+                    Log.info(c, method, "=== End dumping contents of manifest file ===");
                 }
             }
 
@@ -375,6 +379,16 @@ public class PackageRunnableTest {
             }
 
             assertTrue("Runnable jar did not contain a META-INF/MANIFEST.MF file", manifestFound);
+
+            // If we have an invalid package, save off the jar for troubleshooting.
+            outputAutoFVTDirectory.mkdirs();
+            Log.info(c, method, "Copying directory from " +
+                                runnableJar.getAbsolutePath() + " to " +
+                                outputAutoFVTDirectory.getAbsolutePath() + "/" + serverName + ".jar");
+
+            File srcDir = new File(runnableJar.getAbsolutePath());
+            copyFile(srcDir, new File(outputAutoFVTDirectory.getAbsolutePath() + "/" + serverName + ".jar"));
+
         }
 
         assertTrue("Server did not start successfully in time.", found);
@@ -386,13 +400,18 @@ public class PackageRunnableTest {
         } else {
             // stop cleanly so shutdown hook is called
             stopServer(extractLoc);
+            Log.info(c, method, "Server is stopping via the stop command, thus the shutdown hook should run...");
+            while (server.isStarted()) {
+                Log.info(c, method, "Server still alive..sleeping");
+                Thread.sleep(1);
+            }
         }
 
         if (os != null) {
             os.close();
         }
 
-        Log.info(c, "executeTheJar", "Waiting 30 seconds...to make sure all Liberty thread exiting.");
+        Log.info(c, method, "Waiting 30 seconds...to make sure all Liberty thread exiting.");
         Thread.sleep(30000); // wait 30 second
 
         return extractLoc;
@@ -644,4 +663,71 @@ public class PackageRunnableTest {
 
         return manifestFound;
     }
+
+    /**
+     * As of today, the FAT environment's installation of WLP does not include lib/extract directory.
+     * The package command requires that the lib/extract directory exists, as this directory
+     * contains a required manifest, self extractable classes, etc. Copy the wlp.lib.extract.jar
+     * contents to wlp/lib/extract folder.
+     *
+     * @return false if /lib/extract exists, else true if it is created
+     *
+     * @throws Exception
+     */
+    private static boolean createWLPLibExtract() throws Exception {
+        try {
+            server.getFileFromLibertyInstallRoot("lib/extract");
+            return false;
+        } catch (FileNotFoundException ex) {
+            //expected - the directory does not exist - so proceed.
+        }
+        RemoteFile libExtractDir = LibertyFileManager.createRemoteFile(server.getMachine(), server.getInstallRoot() + "/lib/extract");
+        libExtractDir.mkdirs();
+
+        JarFile libExtractJar = new JarFile("lib/LibertyFATTestFiles/wlp.lib.extract.jar");
+
+        for (Enumeration<JarEntry> entries = libExtractJar.entries(); entries.hasMoreElements();) {
+            JarEntry entry = entries.nextElement();
+            String entryName = entry.getName();
+
+            if ("wlp/".equals(entryName) || "wlp/lib/".equals(entryName) || "wlp/lib/extract/".equals(entryName)) {
+                continue;
+            }
+            File libExtractFile = new File(libExtractDir.getAbsolutePath() + "/" + entryName);
+
+            //Jar contains some contents in wlp/lib/extract folder. Copy those contents in libExtractDir directly.
+            if (entryName.startsWith("wlp/lib/extract")) {
+                libExtractFile = new File(libExtractDir.getAbsolutePath() + "/" + entryName.substring(entryName.lastIndexOf("extract/") + 8));
+            }
+
+            if (entryName.endsWith("/")) {
+                libExtractFile.mkdirs();
+            } else if (!entryName.endsWith("/")) {
+                writeFile(libExtractJar, entry, libExtractFile);
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Writes out a jar file
+     *
+     * @param jar
+     * @param entry
+     * @param file
+     * @throws IOException
+     * @throws FileNotFoundException
+     */
+    private static void writeFile(JarFile jar, JarEntry entry, File file) throws IOException, FileNotFoundException {
+        try (InputStream is = jar.getInputStream(entry)) {
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                byte[] buffer = new byte[4096];
+                int read = -1;
+                while ((read = is.read(buffer)) != -1) {
+                    fos.write(buffer, 0, read);
+                }
+            }
+        }
+    }
+
 }
