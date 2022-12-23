@@ -10,6 +10,7 @@
  *******************************************************************************/
 package com.ibm.ws.test.wsfeatures.client;
 
+import java.io.File;
 import java.io.IOException;
 
 import javax.activation.DataHandler;
@@ -67,6 +68,6 @@ public class WSAPropertyTestServlet extends HttpServlet {
         provider.getRequestContext().put(BindingProvider.ENDPOINT_ADDRESS_PROPERTY,
                                          "https://" + host + ":" + port + "/webServiceRefFeatures/ImageServiceImplServiceTwo");
 
-        proxy.uploadImage("ServiceInjection", new DataHandler(new FileDataSource("resources/" + "a.jpg")));
+        proxy.uploadImage("ServiceInjection", new DataHandler(new FileDataSource("resources" + File.separator + "a.jpg")));
     }
 }
