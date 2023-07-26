@@ -12,14 +12,16 @@
  *******************************************************************************/
 package com.ibm.samples.jaxws.testhandlerprovider;
 
+import javax.jws.HandlerChain;
 import javax.jws.WebService;
 
 import com.ibm.samples.jaxws.testhandlerprovider.service.SayHelloService;
 
-@WebService(serviceName = "SayHelloService",
+@WebService(serviceName = "SayHelloServiceWithHandler",
             portName = "SayHelloPort",
             targetNamespace = "http://jaxws.samples.ibm.com.handler/")
-public class SayHelloServiceImpl implements SayHelloService {
+@HandlerChain(file = "handler/handler-test-provider-say-hello.xml")
+public class SayHelloServiceWithHandlerImpl implements SayHelloService {
 
     /*
      * (non-Javadoc)
