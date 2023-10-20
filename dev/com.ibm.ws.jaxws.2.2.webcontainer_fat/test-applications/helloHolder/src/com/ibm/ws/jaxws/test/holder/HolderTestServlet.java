@@ -14,6 +14,8 @@ import static org.junit.Assert.assertEquals;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import javax.servlet.annotation.WebServlet;
@@ -21,6 +23,7 @@ import javax.xml.namespace.QName;
 import javax.xml.ws.BindingProvider;
 import javax.xml.ws.Holder;
 import javax.xml.ws.Service;
+import javax.xml.ws.handler.Handler;
 
 import org.junit.Test;
 import org.xmlsoap.schemas.ws._2004._08.addressing.AttributedURI;
@@ -31,6 +34,7 @@ import hello.Header;
 import hello.HelloIF;
 import hello.Location;
 import hello.PSBAddressingType;
+import hello.SecurityHeaderHandler;
 import hello.StateType;
 
 @SuppressWarnings("serial")
@@ -244,7 +248,12 @@ public class HolderTestServlet extends FATServlet {
     @Test
     public void testHeaderInBody() throws Exception {
 
-        // Set or Reset Holder<Address> address1's value to the same as the expected address
+        BindingProvider bp = (BindingProvider) proxy;
+
+        List<Handler> handlerChain = new ArrayList<Handler>();
+        handlerChain.add(new SecurityHeaderHandler());
+        bp.getBinding().setHandlerChain(handlerChain);
+
         Holder<PSBAddressingType> holderPSBAddressingType = new Holder<PSBAddressingType>();
         PSBAddressingType pat = new PSBAddressingType();
         AttributedURI attr = new AttributedURI();
