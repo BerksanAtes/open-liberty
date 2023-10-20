@@ -18,8 +18,7 @@ import javax.xml.bind.annotation.XmlType;
  *   &lt;complexContent>
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
- *         &lt;element name="address" type="{http://hello}Address"/>
- *         &lt;element name="header" type="{http://hello}Header"/>
+ *         &lt;element name="getAddressFromNameReturn" type="{http://hello}Address"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
  *   &lt;/complexContent>
@@ -30,63 +29,36 @@ import javax.xml.bind.annotation.XmlType;
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(name = "", propOrder = {
-    "address",
-    "header"
+    "getAddressFromNameReturn"
 })
-@XmlRootElement(name = "sayHelloHeader")
-public class SayHelloHeader {
+@XmlRootElement(name = "getAddressFromNameResponse")
+public class GetAddressFromNameResponse {
 
     @XmlElement(required = true, nillable = true)
-    protected Address address;
-    @XmlElement(required = true)
-    protected Header header;
+    protected Address getAddressFromNameReturn;
 
     /**
-     * Gets the value of the address property.
+     * Gets the value of the getAddressFromNameReturn property.
      * 
      * @return
      *     possible object is
      *     {@link Address }
      *     
      */
-    public Address getAddress() {
-        return address;
+    public Address getGetAddressFromNameReturn() {
+        return getAddressFromNameReturn;
     }
 
     /**
-     * Sets the value of the address property.
+     * Sets the value of the getAddressFromNameReturn property.
      * 
      * @param value
      *     allowed object is
      *     {@link Address }
      *     
      */
-    public void setAddress(Address value) {
-        this.address = value;
-    }
-
-    /**
-     * Gets the value of the header property.
-     * 
-     * @return
-     *     possible object is
-     *     {@link Header }
-     *     
-     */
-    public Header getHeader() {
-        return header;
-    }
-
-    /**
-     * Sets the value of the header property.
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link Header }
-     *     
-     */
-    public void setHeader(Header value) {
-        this.header = value;
+    public void setGetAddressFromNameReturn(Address value) {
+        this.getAddressFromNameReturn = value;
     }
 
 }

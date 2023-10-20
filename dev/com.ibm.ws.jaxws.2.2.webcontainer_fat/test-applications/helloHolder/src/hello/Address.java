@@ -5,7 +5,6 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlSchemaType;
 import javax.xml.bind.annotation.XmlType;
 
 /**
@@ -21,10 +20,10 @@ import javax.xml.bind.annotation.XmlType;
  *         &lt;element name="streetNum" type="{http://www.w3.org/2001/XMLSchema}int"/>
  *         &lt;element name="streetName" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="city" type="{http://www.w3.org/2001/XMLSchema}string"/>
- *         &lt;element name="state" type="{http://hello}StateType"/>
+ *         &lt;element name="state" type="{http://www.w3.org/2001/XMLSchema}string"/>
  *         &lt;element name="zip" type="{http://www.w3.org/2001/XMLSchema}int"/>
  *       &lt;/sequence>
- *       &lt;attribute name="lang" type="{http://www.w3.org/2001/XMLSchema}string" default="EN" />
+ *       &lt;attribute name="lang" type="{http://www.w3.org/2001/XMLSchema}string" />
  *     &lt;/restriction>
  *   &lt;/complexContent>
  * &lt;/complexType>
@@ -48,7 +47,6 @@ public class Address {
     @XmlElement(required = true, nillable = true)
     protected String city;
     @XmlElement(required = true, nillable = true)
-    @XmlSchemaType(name = "string")
     protected StateType state;
     protected int zip;
     @XmlAttribute(name = "lang")
@@ -76,7 +74,7 @@ public class Address {
      * @return
      *         possible object is
      *         {@link String }
-     *
+     * 
      */
     public String getStreetName() {
         return streetName;
@@ -88,7 +86,7 @@ public class Address {
      * @param value
      *                  allowed object is
      *                  {@link String }
-     *
+     * 
      */
     public void setStreetName(String value) {
         this.streetName = value;
@@ -100,7 +98,7 @@ public class Address {
      * @return
      *         possible object is
      *         {@link String }
-     *
+     * 
      */
     public String getCity() {
         return city;
@@ -112,7 +110,7 @@ public class Address {
      * @param value
      *                  allowed object is
      *                  {@link String }
-     *
+     * 
      */
     public void setCity(String value) {
         this.city = value;
@@ -123,8 +121,8 @@ public class Address {
      *
      * @return
      *         possible object is
-     *         {@link StateType }
-     *
+     *         {@link String }
+     * 
      */
     public StateType getState() {
         return state;
@@ -133,13 +131,13 @@ public class Address {
     /**
      * Sets the value of the state property.
      *
-     * @param value
-     *                  allowed object is
-     *                  {@link StateType }
-     *
+     * @param state2
+     *                   allowed object is
+     *                   {@link String }
+     * 
      */
-    public void setState(StateType value) {
-        this.state = value;
+    public void setState(StateType state2) {
+        this.state = state2;
     }
 
     /**
@@ -164,14 +162,10 @@ public class Address {
      * @return
      *         possible object is
      *         {@link String }
-     *
+     * 
      */
     public String getLang() {
-        if (lang == null) {
-            return "EN";
-        } else {
-            return lang;
-        }
+        return lang;
     }
 
     /**
@@ -180,7 +174,7 @@ public class Address {
      * @param value
      *                  allowed object is
      *                  {@link String }
-     *
+     * 
      */
     public void setLang(String value) {
         this.lang = value;

@@ -7,16 +7,16 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
 
 /**
- * <p>Java class for Location complex type.
+ * <p>Java class for isPalindrome complex type.
  *
  * <p>The following schema fragment specifies the expected content contained within this class.
  *
  * <pre>
- * &lt;complexType name="Location">
+ * &lt;complexType name="isPalindrome">
  *   &lt;complexContent>
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
- *         &lt;element name="address" type="{http://www.w3.org/2001/XMLSchema}anyType"/>
+ *         &lt;element name="arg0" type="{http://www.w3.org/2001/XMLSchema}string" minOccurs="0"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
  *   &lt;/complexContent>
@@ -26,36 +26,36 @@ import javax.xml.bind.annotation.XmlType;
  *
  */
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "Location", propOrder = {
-                                          "address"
+@XmlType(name = "isPalindrome", propOrder = {
+                                              "arg0"
 })
-public class Location {
+public class IsPalindrome {
 
-    @XmlElement(required = true, nillable = true)
-    protected Address address;
+    @XmlElement(name = "arg0")
+    protected String arg0;
 
     /**
-     * Gets the value of the address property.
+     * Gets the value of the arg0 property.
      *
      * @return
      *         possible object is
-     *         {@link Object }
-     * 
+     *         {@link String }
+     *
      */
-    public Address getAddress() {
-        return address;
+    public String getArg0() {
+        return arg0;
     }
 
     /**
-     * Sets the value of the address property.
+     * Sets the value of the arg0 property.
      *
      * @param value
      *                  allowed object is
-     *                  {@link Object }
-     * 
+     *                  {@link String }
+     *
      */
-    public void setAddress(Address value) {
-        this.address = value;
+    public void setArg0(String value) {
+        this.arg0 = value;
     }
 
 }

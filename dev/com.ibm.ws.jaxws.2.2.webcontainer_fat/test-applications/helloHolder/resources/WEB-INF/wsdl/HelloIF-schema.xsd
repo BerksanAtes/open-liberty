@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+	xmlns:tns="http://hello" xmlns:tns1="http://hello"
+	attributeFormDefault="unqualified" elementFormDefault="unqualified"
+	targetNamespace="http://hello"
+	xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing">
+
+	<xs:import
+		namespace="http://schemas.xmlsoap.org/ws/2004/08/addressing"
+		schemaLocation="SOAP-addressing.xsd" />
+
+	<xs:element name="sayHelloHeader">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="address" nillable="true"
+					type="tns:Address" />
+				<xs:element name="header" type="tns:Header" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="updateAddress">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="Address" nillable="true"
+					type="tns:holder" />
+				<xs:element name="Address2" nillable="true"
+					type="tns:holder" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:complexType name="Address">
+		<xs:sequence>
+			<xs:element name="streetNum" type="xs:int" />
+			<xs:element name="streetName" nillable="true"
+				type="xs:string" />
+			<xs:element name="city" nillable="true" type="xs:string" />
+			<xs:element name="state" nillable="true" type="xs:string" />
+			<xs:element name="zip" type="xs:int" />
+		</xs:sequence>
+		<xs:attribute name="lang" type="xs:string" />
+	</xs:complexType>
+	<xs:complexType name="Header">
+		<xs:sequence>
+			<xs:element minOccurs="0" name="address"
+				type="tns:Address" />
+			<xs:element minOccurs="0" name="location"
+				type="tns:Location" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="Location">
+		<xs:sequence>
+			<xs:element name="address" nillable="true"
+				type="xs:anyType" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType final="extension restriction"
+		name="holder">
+		<xs:sequence>
+			<xs:element minOccurs="0" name="value" type="xs:anyType" />
+		</xs:sequence>
+	</xs:complexType>
+	<xs:simpleType name="StateType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="OH" />
+			<xs:enumeration value="IN" />
+			<xs:enumeration value="TX" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:element name="Header" nillable="true" type="tns:Header" />
+
+	<xs:element name="isPalindrome" type="tns:isPalindrome" />
+
+	<xs:element name="isPalindromeResponse"
+		type="tns:isPalindromeResponse" />
+
+	<xs:complexType name="isPalindrome">
+		<xs:sequence>
+			<xs:element name="arg0" type="xs:string" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:complexType name="isPalindromeResponse">
+		<xs:sequence>
+			<xs:element name="return" type="xs:boolean" />
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="SSCAddressing"
+		type="tns:PSBAddressingType" />
+
+	<xs:complexType name="PSBAddressingType">
+		<xs:sequence>
+			<xs:element ref="wsa:MessageID" />
+			<xs:element ref="wsa:To" />
+			<xs:element ref="wsa:Action" />
+			<xs:element ref="wsa:From" />
+			<xs:element ref="wsa:ReplyTo" />
+			<xs:element ref="wsa:FaultTo" />
+			<xs:element ref="wsa:RelatesTo" minOccurs="0" />
+			<xs:element ref="wsa:EndpointReference" minOccurs="0" />
+		</xs:sequence>
+	</xs:complexType>
+
+
+</xs:schema>

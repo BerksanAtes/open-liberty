@@ -34,11 +34,11 @@ import componenttest.topology.utils.FATServletClient;
  * @WebParam(name = "Address", targetNamespace = "", mode = WebParam.Mode.INOUT) Holder<Address> address,
  * @WebParam(name = "Header", targetNamespace = "", header = true, mode = WebParam.Mode.INOUT) Holder<Header> header);
  *
- * The tests check client instantiated Holder values against the values returned by the Web Services Implementation.
- * For simplicities sake, the same hello.Address type value is always expected between tests as it makes for easy compares, since what
- * we really want to test is the proper marshalling and unmarshalling of the Holder<T> types.
+ *                The tests check client instantiated Holder values against the values returned by the Web Services Implementation.
+ *                For simplicities sake, the same hello.Address type value is always expected between tests as it makes for easy compares, since what
+ *                we really want to test is the proper marshalling and unmarshalling of the Holder<T> types.
  *
- * TODO: Add code in HeaderAddressHandler, then tests to check contents of Holder<Header> in the SOAPHeader itself
+ *                TODO: Add code in HeaderAddressHandler, then tests to check contents of Holder<Header> in the SOAPHeader itself
  */
 @RunWith(FATRunner.class)
 @Mode(TestMode.FULL)
@@ -53,7 +53,7 @@ public class HolderTest extends FATServletClient {
     @BeforeClass
     public static void setUp() throws Exception {
         WebArchive app = ShrinkHelper.buildDefaultApp(APP_NAME, "com.ibm.ws.jaxws.test.holder",
-                                                      "hello");
+                                                      "hello", "org.xmlsoap.schemas.ws._2004._08.addressing");
 
         ShrinkHelper.exportDropinAppToServer(server, app);
 

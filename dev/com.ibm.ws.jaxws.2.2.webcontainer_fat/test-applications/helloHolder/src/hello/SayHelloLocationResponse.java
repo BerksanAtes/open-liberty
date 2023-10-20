@@ -3,21 +3,22 @@ package hello;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 
 
 /**
- * <p>Java class for Header complex type.
+ * <p>Java class for anonymous complex type.
  * 
  * <p>The following schema fragment specifies the expected content contained within this class.
  * 
  * <pre>
- * &lt;complexType name="Header">
+ * &lt;complexType>
  *   &lt;complexContent>
  *     &lt;restriction base="{http://www.w3.org/2001/XMLSchema}anyType">
  *       &lt;sequence>
- *         &lt;element name="address" type="{http://hello}Address" minOccurs="0"/>
- *         &lt;element name="location" type="{http://hello}Location" minOccurs="0"/>
+ *         &lt;element name="Location" type="{http://hello}Location"/>
  *       &lt;/sequence>
  *     &lt;/restriction>
  *   &lt;/complexContent>
@@ -27,38 +28,14 @@ import javax.xml.bind.annotation.XmlType;
  * 
  */
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "Header", propOrder = {
-    "address",
+@XmlType(name = "", propOrder = {
     "location"
 })
-public class Header {
+@XmlRootElement(name = "sayHelloLocationResponse")
+public class SayHelloLocationResponse {
 
-    protected Address address;
+    @XmlElement(name = "Location", required = true, nillable = true)
     protected Location location;
-
-    /**
-     * Gets the value of the address property.
-     * 
-     * @return
-     *     possible object is
-     *     {@link Address }
-     *     
-     */
-    public Address getAddress() {
-        return address;
-    }
-
-    /**
-     * Sets the value of the address property.
-     * 
-     * @param value
-     *     allowed object is
-     *     {@link Address }
-     *     
-     */
-    public void setAddress(Address value) {
-        this.address = value;
-    }
 
     /**
      * Gets the value of the location property.

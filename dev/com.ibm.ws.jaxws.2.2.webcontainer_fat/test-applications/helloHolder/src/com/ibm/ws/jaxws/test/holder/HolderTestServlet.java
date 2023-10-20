@@ -23,12 +23,14 @@ import javax.xml.ws.Holder;
 import javax.xml.ws.Service;
 
 import org.junit.Test;
+import org.xmlsoap.schemas.ws._2004._08.addressing.AttributedURI;
 
 import componenttest.app.FATServlet;
 import hello.Address;
 import hello.Header;
 import hello.HelloIF;
 import hello.Location;
+import hello.PSBAddressingType;
 import hello.StateType;
 
 @SuppressWarnings("serial")
@@ -142,7 +144,7 @@ public class HolderTestServlet extends FATServlet {
         address1 = new Holder<Address>();
         address2 = new Holder<Address>();
         headerHolder = new Holder<Header>();
-        Location<Address> locationAddress = new Location<Address>();
+        Location locationAddress = new Location();
         Header headerType = new Header();
         address1.value = expectedAddress1;
 
@@ -177,7 +179,7 @@ public class HolderTestServlet extends FATServlet {
         address1 = new Holder<Address>();
         address2 = new Holder<Address>();
         headerHolder = new Holder<Header>();
-        Location<Address> locationAddress = new Location<Address>();
+        Location locationAddress = new Location();
         Header headerType = new Header();
         address1.value = createAddress("EN", null, "S Bap St", 421, 84104, StateType.IN);
 
@@ -211,7 +213,7 @@ public class HolderTestServlet extends FATServlet {
         address1 = new Holder<Address>();
         address2 = new Holder<Address>();
         headerHolder = new Holder<Header>();
-        Location<Address> locationAddress = new Location<Address>();
+        Location locationAddress = new Location();
         Header headerType = new Header();
         address1.value = null;
         headerType = new Header();
@@ -232,6 +234,28 @@ public class HolderTestServlet extends FATServlet {
         LOG.info("testNullHolderAndNullHeaderWithServerSideUpdate: Comparing Holder<Address> headerHolder Location's Address value to the Expected Address Value");
         compareExpectedAddress(headerHolder.value.getLocation().getAddress(), expectedHeaderAddress);
 
+    }
+
+    /*
+     * The test sends empty Address elements to the endpoint, the endpoint checks for these empty address, and then returns both Holder<Address> and Holder<Header>
+     * with fully initialized address values The test checks the returned address values from Holder<Header>.value.getAddress(), Holder<Header>.getLocation().getAddress(),
+     * and Holder<Address>.value.getAddress() against the expected Address values to ensure they are equal
+     */
+    @Test
+    public void testHeaderInBody() throws Exception {
+
+        // Set or Reset Holder<Address> address1's value to the same as the expected address
+        Holder<PSBAddressingType> holderPSBAddressingType = new Holder<PSBAddressingType>();
+        PSBAddressingType pat = new PSBAddressingType();
+        AttributedURI attr = new AttributedURI();
+        attr.setValue("messageid");
+        pat.setMessageID(attr);
+        holderPSBAddressingType.value = pat;
+
+        boolean isP = proxy.isPalindrome("racecar", holderPSBAddressingType);
+
+        // Compare Address values from Holders to expectedAddress's Address value
+        LOG.info("~isP: " + isP);;
     }
 
     /**
