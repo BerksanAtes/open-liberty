@@ -9,12 +9,19 @@
  *******************************************************************************/
 package hello;
 
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.xml.namespace.QName;
 import javax.xml.soap.SOAPElement;
 import javax.xml.soap.SOAPEnvelope;
+import javax.xml.soap.SOAPException;
+import javax.xml.soap.SOAPFactory;
 import javax.xml.soap.SOAPHeader;
 import javax.xml.soap.SOAPMessage;
 import javax.xml.ws.handler.MessageContext;
@@ -36,19 +43,24 @@ public class SecurityHeaderHandler implements SOAPHandler<SOAPMessageContext> {
 
             try {
                 // Added security header even though there is no security configured in yet
-                SOAPEnvelope envelope = context.getMessage().getSOAPPart().getEnvelope();
-                SOAPHeader header = envelope.getHeader();
+/*
+ * SOAPEnvelope envelope = context.getMessage().getSOAPPart().getEnvelope();
+ * SOAPHeader header = envelope.getHeader();
+ *
+ * SOAPElement security = header.addChildElement("Security", "wsse", "http://schemas.xmlsoap.org/ws/2003/06/secext");
+ *
+ * SOAPElement usernameToken = security.addChildElement("UsernameToken", "wsse");
+ * usernameToken.addAttribute(new QName("xmlns:wsu"), "http://schemas.xmlsoap.org/ws/2003/06/secext");
+ *
+ * SOAPElement username = usernameToken.addChildElement("Username", "wsse");
+ * username.addTextNode("test_username");
+ *
+ * SOAPElement password = usernameToken.addChildElement("Password", "wsse");
+ * password.addTextNode("test_password");
+ */
+                setSoapAuthHeader(context, "test_username", "test_password");
 
-                SOAPElement security = header.addChildElement("Security", "wsse", "http://schemas.xmlsoap.org/ws/2003/06/secext");
-
-                SOAPElement usernameToken = security.addChildElement("UsernameToken", "wsse");
-                usernameToken.addAttribute(new QName("xmlns:wsu"), "http://schemas.xmlsoap.org/ws/2003/06/secext");
-
-                SOAPElement username = usernameToken.addChildElement("Username", "wsse");
-                username.addTextNode("test_username");
-
-                SOAPElement password = usernameToken.addChildElement("Password", "wsse");
-                password.addTextNode("test_password");
+                setBasicAuthentication(context, "test_username", "test_password");
 
                 message.saveChanges();
 
@@ -77,5 +89,49 @@ public class SecurityHeaderHandler implements SOAPHandler<SOAPMessageContext> {
         headers.add(securityHeader);
 
         return headers;
+    }
+
+    // Replicating cutomers security settings
+    private String getWebserviceNaam(SOAPMessageContext smc) {
+        QName servicenaam = (QName) smc.get(MessageContext.WSDL_SERVICE);
+        return servicenaam.toString();
+    }
+
+    private void setSoapAuthHeader(SOAPMessageContext context, String username, String password) throws SOAPException {
+        SOAPMessage msg = context.getMessage();
+        SOAPEnvelope envelope = msg.getSOAPPart().getEnvelope();
+        SOAPHeader header = envelope.getHeader();
+        if (header == null) {
+            header = envelope.addHeader();
+        }
+
+        SOAPFactory factory = SOAPFactory.newInstance();
+        String prefix = "wsse";
+        String uri = "http://schemas.xmlsoap.org/ws/2003/06/secext";
+        SOAPElement securityElem = factory.createElement("Security", prefix, uri);
+        SOAPElement tokenElem = factory.createElement("UsernameToken", prefix, uri);
+        SOAPElement usernameElem = factory.createElement("Username", prefix, uri);
+        usernameElem.addTextNode(username);
+        SOAPElement pwdElem = factory.createElement("Password", prefix, uri);
+        pwdElem.addTextNode(password);
+        tokenElem.addChildElement(usernameElem);
+        tokenElem.addChildElement(pwdElem);
+        securityElem.addChildElement(tokenElem);
+
+        header.addChildElement(securityElem);
+    }
+
+    private void setBasicAuthentication(SOAPMessageContext context, String npaUsername, String npaPassword) {
+        Map<String, List<String>> headers = (Map<String, List<String>>) context.get(MessageContext.HTTP_REQUEST_HEADERS);
+        if (headers == null) {
+            headers = new HashMap<>();
+            context.put(MessageContext.HTTP_REQUEST_HEADERS, headers);
+        }
+        String headerValue = npaUsername + ":" + npaPassword;
+        String headerValueBase64 = Base64.getEncoder().encodeToString(headerValue.getBytes());
+        String headerVolledig = "Basic " + headerValueBase64;
+        List<String> authorizationHeader = new ArrayList<>();
+        authorizationHeader.add(headerVolledig);
+        headers.put("Authorization", authorizationHeader);
     }
 }

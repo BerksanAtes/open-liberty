@@ -61,8 +61,8 @@
 			</wsdl:output>
 		</wsdl:operation>
 		<wsdl:operation name="isPalindrome">
-			<wsdl:input message="tns:isPalindrome" /> <!-- wsam:Action="http://inv.aat.tools.dlg.nl/WordInvertor/isPalindromeRequest" -->
-			<wsdl:output message="tns:isPalindromeResponse" /> <!-- wsam:Action="http://inv.aat.tools.dlg.nl/WordInvertor/isPalindromeResponse" -->
+			<wsdl:input wsam:Action="http://inv.aat.tools.dlg.nl/WordInvertor/isPalindromeRequest" message="tns:isPalindrome" /> <!-- wsam:Action="http://inv.aat.tools.dlg.nl/WordInvertor/isPalindromeRequest" -->
+			<wsdl:output wsam:Action="http://inv.aat.tools.dlg.nl/WordInvertor/isPalindromeResponse" message="tns:isPalindromeResponse" /> <!-- wsam:Action="http://inv.aat.tools.dlg.nl/WordInvertor/isPalindromeResponse" -->
 		</wsdl:operation>
 	</wsdl:portType>
 	<wsdl:binding name="HelloIFSoapBinding" type="tns:HelloIF">

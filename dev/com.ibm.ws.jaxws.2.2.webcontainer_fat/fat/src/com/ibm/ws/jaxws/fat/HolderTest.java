@@ -55,7 +55,8 @@ public class HolderTest extends FATServletClient {
         WebArchive app = ShrinkHelper.buildDefaultApp(APP_NAME, "com.ibm.ws.jaxws.test.holder",
                                                       "hello", "org.xmlsoap.schemas.ws._2004._08.addressing");
 
-        ShrinkHelper.exportDropinAppToServer(server, app);
+//        ShrinkHelper.exportDropinAppToServer(server, app);
+        ShrinkHelper.exportAppToServer(server, app);
 
         server.startServer("HolderServer.log");
         System.out.println("Starting Server");
