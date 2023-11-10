@@ -41,7 +41,8 @@ import componenttest.rules.repeater.RepeatTests;
                 WebServiceMonitorTest.class,
                 WebServiceRefFeaturesTest.class,
                 WebServiceRefTest.class,
-                SoapEnvelopePrefixTest.class
+                SoapEnvelopePrefixTest.class,
+                NamespaceMismatchTest.class
 })
 public class FATSuite {
 

@@ -38,8 +38,8 @@ src: \
   test-applications/testMTOMClient_withDD/src,\
   test-applications/testWebServiceMonitor/src,\
   test-applications/virtualhost/src,\
-  test-applications/webServiceRefFeatures/src
-  
+  test-applications/webServiceRefFeatures/src,\
+  test-applications/namespaceMismatchTest/src
   
 
 fat.project: true
