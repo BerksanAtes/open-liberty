@@ -41,7 +41,7 @@ public class LibertyCXFPositivePropertiesTestServlet extends FATServlet {
 
     private static final long serialVersionUID = 1L;
 
-    private static DataHandler imageDataHandler = new DataHandler(new FileDataSource("resources/" + "a.jpg"));
+    private DataHandler imageDataHandler = null;
 
     /*
      * Testing cxf.multipart.attachment property is used to skip or not the attachment output
@@ -54,6 +54,8 @@ public class LibertyCXFPositivePropertiesTestServlet extends FATServlet {
      */
     @Test
     public void testCxfPropertyAttachmentOutputPolicy() throws Exception {
+
+        setImageDataHandler();
 
         ImageService proxy = imageService.getImageServiceImplPort();
 
@@ -76,6 +78,9 @@ public class LibertyCXFPositivePropertiesTestServlet extends FATServlet {
      */
     @Test
     public void testCxfPropertyUsedAlternativePolicy() throws Exception {
+
+        setImageDataHandler();
+
         ImageService proxy = imageService.getImageServiceImplPort();
 
         BindingProvider provider = (BindingProvider) proxy;
@@ -97,6 +102,8 @@ public class LibertyCXFPositivePropertiesTestServlet extends FATServlet {
     @Test
     public void testCxfPropertyUnsupportedPolicy() throws Exception {
 
+        setImageDataHandler();
+
         ImageServiceTwo proxy2 = imageServiceTwo.getImageServiceImplPortTwo();
 
         BindingProvider provider = (BindingProvider) proxy2;
@@ -106,6 +113,23 @@ public class LibertyCXFPositivePropertiesTestServlet extends FATServlet {
 
         proxy2.uploadImage("ServiceInjection", imageDataHandler);
 
+    }
+
+    /*
+     * We are setting imageDataHandler when needed from classes since we need delayed instantiation
+     * to give image file to be ready to copy
+     */
+    private void setImageDataHandler() {
+        if (imageDataHandler == null) {
+            try {
+                FileDataSource fileDataSource = new FileDataSource("resources/" + "a.jpg");
+                this.imageDataHandler = new DataHandler(fileDataSource);
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                // Do you need FFDC here? Remember FFDC instrumentation and @FFDCIgnore
+                e.printStackTrace();
+            }
+        }
     }
 
 }
