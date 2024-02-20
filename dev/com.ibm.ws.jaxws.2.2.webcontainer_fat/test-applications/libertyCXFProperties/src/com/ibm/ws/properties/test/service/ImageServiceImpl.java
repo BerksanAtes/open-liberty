@@ -22,7 +22,7 @@ import javax.xml.ws.soap.Addressing;
 import com.ibm.ws.properties.test.client.stub.ImageService;
 
 @WebService(targetNamespace = "http://jaxws.service/", endpointInterface = "com.ibm.ws.properties.test.service.ImageService", portName = "ImageServiceImplPort",
-            serviceName = "ImageServiceImplService", wsdlLocation = "WEB-INF/wsdl/service-image.wsdl")
+            serviceName = "ImageServiceImplService") // wsdlLocation = "WEB-INF/wsdl/service-image.wsdl"
 @Addressing
 public class ImageServiceImpl implements ImageService {
 
