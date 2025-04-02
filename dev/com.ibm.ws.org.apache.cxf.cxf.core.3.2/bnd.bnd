@@ -164,6 +164,7 @@ DynamicImport-Package: \
 
 instrument.ffdc: false
 instrument.classesExcludes: \
+  org/apache/cxf/attachment/*.class, \
   org/apache/cxf/common/jaxb/*.class, \
   org/apache/cxf/service/invoker/*.class, \
   org/apache/cxf/phase/*.class, \
